@@ -34,7 +34,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    dispatch(loginStart());
+    //dispatch(loginStart());
     const success = await login(email, password);
 
     if (success) {
@@ -50,7 +50,7 @@ const Login = () => {
         loginTime: new Date().toISOString(),
       };
 
-      dispatch(loginSuccess({ user: userData, token: null }));
+     // dispatch(loginSuccess({ user: userData, token: null }));
     }
   };
 

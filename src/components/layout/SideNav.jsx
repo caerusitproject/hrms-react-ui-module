@@ -1,46 +1,18 @@
+// SideNav.jsx (updated)
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { theme } from "../../theme/theme";
 import { COMPANY_INFO } from "../../utils/constants";
+import { menuItems } from "./menuItems"; // Import from separate file
 import CompanyLogo from "../../assets/caerus-logo.png";
+import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 
 const SideNav = ({ collapsed, onToggle }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { logout, user } = useAuth();
   const [isMobile, setIsMobile] = useState(false);
-
-  const menuItems = [
-    {
-      path: "/home",
-      label: "Home",
-      icon: "🏠",
-      key: "home",
-      requiredRoles: ["EMPLOYEE", "TEAM MANAGER", "HR", "ADMIN"],
-    },
-    {
-      path: "/employee-profile",
-      label: "Profile",
-      icon: "🏠",
-      key: "profile",
-      requiredRoles: ["EMPLOYEE", "TEAM MANAGER", "HR", "ADMIN"],
-    },
-    {
-      path: "/about",
-      label: "About",
-      icon: "ℹ️",
-      key: "about",
-      requiredRoles: ["EMPLOYEE", "TEAM MANAGER", "HR", "ADMIN"],
-    },
-    {
-      path: "/dashboard",
-      label: "Dashboard",
-      icon: "📊",
-      key: "dashboard",
-      requiredRoles: ["TEAM MANAGER", "HR", "ADMIN"],
-    },
-  ];
 
   const filteredMenuItems = menuItems.filter((item) =>
     user?.role ? item.requiredRoles.includes(user.role) : false
@@ -67,6 +39,14 @@ const SideNav = ({ collapsed, onToggle }) => {
     navigate(path);
     if (isMobile) onToggle();
   };
+
+  const getIconStyle = (isActive) => ({
+    fontSize: "20px",
+    marginRight: collapsed && !isMobile ? "0" : theme.spacing.md,
+    minWidth: "20px",
+    textAlign: "center",
+    color: isActive ? theme.colors.primary : theme.colors.text.primary,
+  });
 
   return (
     <>
@@ -102,14 +82,14 @@ const SideNav = ({ collapsed, onToggle }) => {
           transform:
             isMobile && collapsed ? "translateX(-100%)" : "translateX(0)",
           boxShadow: theme.shadows.medium,
-          borderTopRightRadius: "25px", 
-          borderBottomRightRadius: "25px", // Add this to curve the top-right corner
-    overflow: "hidden", // Ensure content doesn't overflow the curve
+          borderTopRightRadius: "25px",
+          borderBottomRightRadius: "25px",
+          overflow: "hidden",
         }}
       >
         <div
           style={{
-            padding: isMobile ? theme.spacing.sm : theme.spacing.md, // Reduced padding for mobile
+            padding: isMobile ? theme.spacing.sm : theme.spacing.md,
             borderBottom: `1px solid ${theme.colors.lightGray}`,
             display: "flex",
             alignItems: "center",
@@ -124,9 +104,9 @@ const SideNav = ({ collapsed, onToggle }) => {
                 src={CompanyLogo}
                 alt="Company Logo"
                 style={{
-                  height: isMobile ? "40px" : "48px", // Smaller height on mobile
-                  width: isMobile ? "140px" : "180px", // Stretched width, adjusted for mobile
-                  maxWidth: "100%", // Prevent overflow
+                  height: isMobile ? "40px" : "48px",
+                  width: isMobile ? "140px" : "180px",
+                  maxWidth: "100%",
                   objectFit: "contain",
                   position: "relative",
                   zIndex: 1,
@@ -141,15 +121,15 @@ const SideNav = ({ collapsed, onToggle }) => {
               style={{
                 background: "none",
                 border: "none",
-                fontSize: isMobile ? "20px" : "24px", // Smaller icon on mobile
+                fontSize: isMobile ? "20px" : "24px",
                 cursor: "pointer",
-                padding: isMobile ? theme.spacing.xs : theme.spacing.sm, // Reduced padding
+                padding: isMobile ? theme.spacing.xs : theme.spacing.sm,
                 borderRadius: theme.borderRadius.small,
                 color: collapsed
                   ? theme.colors.text.secondary
                   : theme.colors.primary,
                 transition: theme.transitions.fast,
-                marginLeft: isMobile ? theme.spacing.xs : theme.spacing.sm, // Reduced space between logo and button
+                marginLeft: isMobile ? theme.spacing.xs : theme.spacing.sm,
               }}
             >
               ☰
@@ -258,17 +238,7 @@ const SideNav = ({ collapsed, onToggle }) => {
                   }
                 }}
               >
-                <span
-                  style={{
-                    fontSize: "20px",
-                    marginRight:
-                      collapsed && !isMobile ? "0" : theme.spacing.md,
-                    minWidth: "20px",
-                    textAlign: "center",
-                  }}
-                >
-                  {item.icon}
-                </span>
+                <item.icon sx={getIconStyle(isActive)} />
                 {(!collapsed || isMobile) && (
                   <span style={{ fontSize: "15px" }}>{item.label}</span>
                 )}
@@ -306,7 +276,7 @@ const SideNav = ({ collapsed, onToggle }) => {
                   fontSize: "16px",
                 }}
               >
-                🚪
+                <ExitToAppIcon fontSize="inherit" />
               </span>
               {(!collapsed || isMobile) && "Logout"}
             </button>

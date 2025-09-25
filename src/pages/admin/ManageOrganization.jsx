@@ -6,25 +6,21 @@ const ManageOrganization = () => {
 
   return (
     <div
+      className="fade-in"
       style={{
-        padding: isMobile ? `${theme.spacing.sm} ${theme.spacing.xs}` : `${theme.spacing.xl} ${theme.spacing.lg}`,
-        maxWidth: "100%",
-        width: "100%",
-        boxSizing: "border-box",
+        padding: `${theme.spacing.xl} ${theme.spacing.lg}`,
+        maxWidth: "1200px",
         margin: "0 auto",
       }}
     >
       {/* Header */}
-      <div
-        style={{
-          marginBottom: theme.spacing.xl,
-        }}
-      >
+
+      <div>
         <h1
           style={{
             color: theme.colors.text.primary,
-            margin: 0,
-            fontSize: "26px",
+            marginBottom: theme.spacing.sm,
+            fontSize: "32px",
             fontWeight: "700",
           }}
         >
@@ -33,8 +29,8 @@ const ManageOrganization = () => {
         <p
           style={{
             color: theme.colors.text.secondary,
-            margin: "8px 0 0 0",
-            fontSize: "14px",
+            fontSize: "16px",
+            margin: 0,
           }}
         >
           Manage organizational settings and conduct appraisals for your team.
@@ -45,9 +41,12 @@ const ManageOrganization = () => {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(400px, 1fr))",
+          mt: theme.spacing.xl,
+          gridTemplateColumns: isMobile
+            ? "1fr"
+            : "repeat(auto-fit, minmax(400px, 1fr))",
           gap: isMobile ? theme.spacing.md : theme.spacing.lg,
-          width: "100%",
+         // width: "100%",
         }}
       >
         {/* Manage Organizational Settings */}

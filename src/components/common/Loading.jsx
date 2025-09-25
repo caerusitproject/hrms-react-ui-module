@@ -1,6 +1,6 @@
 
 import React from 'react';
-import CustomLoader from '../layout/CustomLoader';
+import CustomLoader from './CustomLoader';
 
 const Loading = () => <CustomLoader />;
 
