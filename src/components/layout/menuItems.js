@@ -15,7 +15,7 @@ export const menuItems = [
     requiredRoles: ["EMPLOYEE", "TEAM MANAGER", "HR", "ADMIN"],
   },
   {
-    path: "/employee",
+    path: "/employee-profile",
     label: "Profile",
     icon: PersonIcon,
     key: "profile",

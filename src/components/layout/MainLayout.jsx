@@ -3,6 +3,7 @@ import { Outlet } from "react-router-dom";
 import SideNav from "./SideNav";
 import { theme } from "../../theme/theme";
 import { STORAGE_KEYS } from "../../utils/constants";
+import Footer from "../common/Footer";
 
 const MainLayout = () => {
   const [sidenavCollapsed, setSidenavCollapsed] = useState(() => {
@@ -54,7 +55,8 @@ const MainLayout = () => {
             padding: "2px",
             fontSize: isMobile ? "20px" : "16px",
             cursor: "pointer",
-            marginLeft: isMobile ? "0px" : "14px",
+            marginLeft: isMobile ? "0px" : "25px",
+            marginTop: isMobile ? "0px" : "12px",
             boxShadow: theme.shadows.small,
           }}
         >
@@ -68,20 +70,30 @@ const MainLayout = () => {
         className="main-content sidebar-transition"
         style={{
           flex: 1,
-          marginLeft: !sidenavCollapsed ? "260px" : isMobile ? "0" : "70px",
-          marginTop: isMobile ? theme.spacing.xl : theme.spacing.md,
-          padding: isMobile
-            ? `${theme.spacing.xl} ${theme.spacing.md}` // smaller padding for mobile
-            : `${theme.spacing.xl} ${theme.spacing.lg}`, // larger padding for desktop
+          marginLeft: !sidenavCollapsed ? "260px" : isMobile ? "0" : "90px",
           backgroundColor: theme.colors.background,
           minHeight: "100vh",
           overflow: "auto",
           width: "100%",
           maxWidth: "100vw",
+          display: "flex",
+          flexDirection: "column",
         }}
         onClick={() => isMobile && !sidenavCollapsed && toggleSidenav()}
       >
-        <Outlet />
+        <div
+          style={{
+            flex: 1,
+            padding: isMobile
+              ? `${theme.spacing.xxl} ${theme.spacing.md}`
+              : `${theme.spacing.xxl} ${theme.spacing.xxl}`,
+            paddingTop: isMobile ? theme.spacing.xl : theme.spacing.md,
+          }}
+        >
+          <Outlet />
+        </div>
+
+        <Footer />
       </div>
     </div>
   );

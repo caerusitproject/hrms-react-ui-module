@@ -110,11 +110,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="fade-in" style={{
-      padding: `${theme.spacing.xl} ${theme.spacing.lg}`,
-      maxWidth: '1400px',
-      margin: '0 auto'
-    }}>
+    <div >
       {/* Header */}
       <div style={{
         display: 'flex',

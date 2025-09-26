@@ -76,14 +76,6 @@ const AppRoutes = () => {
               <Route path="create" element={<EmployeeProfileEdit />} />
               <Route path="edit/:id" element={<EmployeeProfileEdit />} />
             </Route>
-            {/* <Route
-              path="employee"
-              element={
-                <Suspense fallback={<CustomLoader />}>
-                  <EmployeeProfile />
-                </Suspense>
-              }
-            /> */}
             <Route
               path="employee-profile"
               element={

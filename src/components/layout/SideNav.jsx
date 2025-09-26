@@ -1,4 +1,4 @@
-// SideNav.jsx (updated)
+// SideNav.jsx (updated with highlight styling and nested route support)
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
@@ -41,11 +41,11 @@ const SideNav = ({ collapsed, onToggle }) => {
   };
 
   const getIconStyle = (isActive) => ({
-    fontSize: "20px",
+    fontSize: collapsed && !isMobile ? "23px" : "20px",
     marginRight: collapsed && !isMobile ? "0" : theme.spacing.md,
     minWidth: "20px",
     textAlign: "center",
-    color: isActive ? theme.colors.primary : theme.colors.text.primary,
+    color: isActive ? theme.colors.primary : theme.colors.text.secondary,
   });
 
   return (
@@ -68,7 +68,7 @@ const SideNav = ({ collapsed, onToggle }) => {
       <div
         className={`sidebar ${!collapsed ? "open" : ""} sidebar-transition`}
         style={{
-          width: collapsed ? "70px" : "260px",
+          width: collapsed ? "80px" : "260px",
           maxWidth: "90%",
           height: "100vh",
           backgroundColor: theme.colors.white,
@@ -141,7 +141,7 @@ const SideNav = ({ collapsed, onToggle }) => {
         {!collapsed && user && (
           <div
             style={{
-              padding: theme.spacing.lg,
+              padding: isMobile ? `${theme.spacing.sm}` : `${theme.spacing.md}`,
               borderBottom: `1px solid ${theme.colors.lightGray}`,
               backgroundColor: theme.colors.background,
             }}
@@ -203,44 +203,114 @@ const SideNav = ({ collapsed, onToggle }) => {
           }}
         >
           {filteredMenuItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            // Enhanced isActive logic for nested routes
+            const isActive = (() => {
+              const currentPath = location.pathname;
+
+              // Direct match
+              if (currentPath === item.path) return true;
+
+              // Handle nested routes - check if current path starts with menu item path
+              if (item.path !== "/" && currentPath.startsWith(item.path)) {
+                const remainingPath = currentPath.substring(item.path.length);
+                // Check if it's a proper nested route (starts with / or is empty)
+                if (remainingPath === "" || remainingPath.startsWith("/")) {
+                  return true;
+                }
+              }
+
+              // Special case for employee-profile highlighting when on employee routes
+              if (
+                item.path === "/employee-profile" &&
+                currentPath.startsWith("/employee")
+              ) {
+                return true;
+              }
+
+              return false;
+            })();
+
             return (
               <div
                 key={item.key}
                 onClick={() => handleNavigation(item.path)}
                 style={{
-                  padding: `${theme.spacing.md} ${theme.spacing.lg}`,
                   display: "flex",
                   alignItems: "center",
+                  justifyContent:
+                    collapsed && !isMobile ? "center" : "flex-start",
+                  flexDirection: collapsed && !isMobile ? "column" : "row",
+                  padding:
+                    collapsed && !isMobile
+                      ? `${theme.spacing.sm} ${theme.spacing.xs}`
+                      : `${theme.spacing.md} ${theme.spacing.lg}`,
                   cursor: "pointer",
+                  // Replace this section:
                   backgroundColor: isActive
-                    ? `${theme.colors.primary}15`
+                    ? collapsed && !isMobile
+                      ? `${theme.colors.primaryLight}34` // Primary dark when collapsed
+                      : `${theme.colors.primaryLight}22` // Light primary when expanded
                     : "transparent",
-                  borderRight: isActive
-                    ? `4px solid ${theme.colors.primary}`
-                    : "none",
+                  borderRight:
+                    collapsed && !isMobile && isActive
+                      ? "none" // Remove the right border WHILE ITS COLLAPSED
+                      : isActive
+                      ? `4px solid ${theme.colors.primary}`
+                      : "none",
                   color: isActive
                     ? theme.colors.primary
                     : theme.colors.text.primary,
                   fontWeight: isActive ? "600" : "400",
                   transition: theme.transitions.fast,
                   margin: `2px ${theme.spacing.sm}`,
+                  marginBottom:
+                    collapsed && !isMobile ? theme.spacing.md : "2px",
                   borderRadius: theme.borderRadius.small,
+                  minHeight: collapsed && !isMobile ? "50px" : "auto",
+                  textAlign: collapsed && !isMobile ? "center" : "left",
+                  overflow: "hidden",
                 }}
-                onMouseOver={(e) => {
+                onMouseEnter={(e) => {
                   if (!isActive) {
-                    e.target.style.backgroundColor = theme.colors.gray;
+                    e.currentTarget.style.backgroundColor =
+                      theme.colors.mediumGray + "22";
                   }
                 }}
-                onMouseOut={(e) => {
+                onMouseLeave={(e) => {
                   if (!isActive) {
-                    e.target.style.backgroundColor = "transparent";
+                    e.currentTarget.style.backgroundColor = "transparent";
                   }
                 }}
               >
                 <item.icon sx={getIconStyle(isActive)} />
+
                 {(!collapsed || isMobile) && (
-                  <span style={{ fontSize: "15px" }}>{item.label}</span>
+                  <span
+                    style={{
+                      fontSize: isMobile ? "15px" : "14px",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {item.label}
+                  </span>
+                )}
+
+                {collapsed && !isMobile && (
+                  <span
+                    style={{
+                      fontSize: "10px",
+                      marginTop: "2px",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      maxWidth: "60px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {item.label}
+                  </span>
                 )}
               </div>
             );
@@ -248,10 +318,11 @@ const SideNav = ({ collapsed, onToggle }) => {
         </div>
 
         {/* Footer Actions */}
-        {!collapsed && (
+        {
           <div
             style={{
-              padding: theme.spacing.lg,
+              padding:
+                collapsed && !isMobile ? theme.spacing.md : theme.spacing.md,
               borderTop: `1px solid ${theme.colors.lightGray}`,
               backgroundColor: theme.colors.background,
             }}
@@ -261,27 +332,35 @@ const SideNav = ({ collapsed, onToggle }) => {
               className="btn-secondary"
               style={{
                 width: "100%",
-                padding: theme.spacing.md,
+                padding:
+                  collapsed && !isMobile ? theme.spacing.xs : theme.spacing.md,
                 display: "flex",
                 alignItems: "center",
                 justifyContent:
                   collapsed && !isMobile ? "center" : "flex-start",
-                fontSize: "14px",
+                fontSize: collapsed && !isMobile ? "20px" : "16px",
                 borderRadius: theme.borderRadius.large,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor =
+                  theme.colors.error + "20";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "";
               }}
             >
               <span
                 style={{
                   marginRight: collapsed && !isMobile ? "0" : theme.spacing.sm,
-                  fontSize: "16px",
+                  fontSize: collapsed && !isMobile ? "20px" : "16px",
                 }}
               >
-                <ExitToAppIcon fontSize="inherit" />
+                <ExitToAppIcon fontSize="inherit" color="error" />
               </span>
               {(!collapsed || isMobile) && "Logout"}
             </button>
           </div>
-        )}
+        }
       </div>
     </>
   );
