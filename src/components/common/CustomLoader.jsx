@@ -13,7 +13,7 @@ const CustomLoader = () => (
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: 'rgba(255, 165, 0, 0.1)', // Light orange background with opacity
+      //backgroundColor: 'rgba(255, 165, 0, 0.1)', // Light orange background with opacity
       zIndex: 1400, // MUI z-index for modals
     }}
   >

@@ -21,23 +21,35 @@ const EmployeeProfileView = ({ employeeId = "1" }) => {
         const transformedData = {
           personalDetails: {
             fullName: data.name || "N/A",
-            contactNumber: data.mobile || data.phone || "N/A",
             email: data.email || "N/A",
-            address: data.address && data.city ? `${data.address}, ${data.city}` : "N/A",
+            contactNumber: data.mobile || data.phone || "N/A",
+            gender: data.gender || "N/A",
+            maritalStatus: data.maritalStatus || "N/A",
+            fatherName: data.fatherName || "N/A",
+            idNumber: data.idNumber || "N/A",
+            address:
+              data.address && data.city
+                ? `${data.address}, ${data.city}`
+                : "N/A",
+            country: data.country || "N/A",
           },
           professionalDetails: {
-            designation: data.department || "N/A", // Assuming department as designation
+            designation: data.department || "N/A", // assuming department as designation
             department: data.department || "N/A",
             dateOfJoining: data.joiningDate || "N/A",
-            reportingManager: "N/A", // API does not provide this, default to N/A
+            reportingManager: "N/A", // not available in API
+            employeeId: data.id || "N/A",
+            empCode: data.empCode || "N/A",
           },
-          avatar: null, // API does not provide avatar
+          avatar: null, // not available in API
         };
         setEmployee(transformedData);
       } catch (err) {
-        setError(err.message.includes("CORS")
-          ? "Failed to connect to the server. Please ensure the backend is configured to allow requests from this application."
-          : err.message);
+        setError(
+          err.message.includes("CORS")
+            ? "Failed to connect to the server. Please ensure the backend is configured to allow requests from this application."
+            : err.message
+        );
       } finally {
         setLoading(false);
       }
@@ -50,7 +62,6 @@ const EmployeeProfileView = ({ employeeId = "1" }) => {
     setIsEditing(!isEditing);
     navigate(`/employee/edit/${employeeId}`); // Pass employeeId in URL for edit mode
   };
-  
 
   const handleView = (docName) => {
     alert(`Viewing ${docName}`);
@@ -83,6 +94,31 @@ const EmployeeProfileView = ({ employeeId = "1" }) => {
 
   return (
     <div>
+      {/* Inline CSS for responsive grid */}
+      <style>
+        {`
+          @media (max-width: 768px) {
+            .profile-grid {
+              grid-template-columns: 1fr !important;
+            }
+          }
+        `}
+      </style>
+
+      {/* Button Section */}
+      <div
+        style={{
+          padding: theme.spacing.md,
+          display: "flex",
+          justifyContent: "flex-end",
+          gap: theme.spacing.md,
+        }}
+      >
+        <Button type="primary" onClick={handleEdit}>
+          {isEditing ? "Cancel" : "Edit Profile"}
+        </Button>
+      </div>
+
       {/* Header Section */}
       <div
         style={{
@@ -103,7 +139,9 @@ const EmployeeProfileView = ({ employeeId = "1" }) => {
             width: "100px",
             height: "100px",
             borderRadius: theme.borderRadius.round,
-            backgroundImage: employee.avatar ? `url(${employee.avatar})` : "none",
+            backgroundImage: employee.avatar
+              ? `url(${employee.avatar})`
+              : "none",
             backgroundSize: "cover",
             backgroundPosition: "center",
             border: `3px solid ${theme.colors.lightGray}`,
@@ -116,7 +154,11 @@ const EmployeeProfileView = ({ employeeId = "1" }) => {
             backgroundColor: !employee.avatar && theme.colors.surfaceVariant,
           }}
         >
-          {!employee.avatar && employee.personalDetails?.fullName?.split(" ").map(n => n[0]).join("")}
+          {!employee.avatar &&
+            employee.personalDetails?.fullName
+              ?.split(" ")
+              .map((n) => n[0])
+              .join("")}
         </div>
 
         <div style={{ flex: 1 }}>
@@ -146,19 +188,9 @@ const EmployeeProfileView = ({ employeeId = "1" }) => {
               color: theme.colors.text.secondary,
             }}
           >
-            Joined on {employee.professionalDetails?.dateOfJoining ? new Date(employee.professionalDetails.dateOfJoining).toLocaleDateString() : "N/A"}
+            Employee ID {employee.professionalDetails?.employeeId || "N/A"}
           </p>
         </div>
-
-        <Button
-          type="primary"
-          onClick={handleEdit}
-        >
-          {isEditing ? "Cancel" : "Edit Profile"}
-        </Button>
-        <Button type="primary" onClick={() => navigate("/employee/create")}>
-  Add New Employee
-</Button>
       </div>
 
       {/* Personal Details Section */}
@@ -192,17 +224,21 @@ const EmployeeProfileView = ({ employeeId = "1" }) => {
             gap: theme.spacing.sm,
           }}
         >
-          <div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: theme.spacing.sm,
+            }}
+          >
             <label
               style={{
-                display: "block",
                 fontSize: "14px",
                 fontWeight: "500",
                 color: theme.colors.text.secondary,
-                marginBottom: theme.spacing.xs,
               }}
             >
-              Full Name
+              Full Name:
             </label>
             <div
               style={{
@@ -214,39 +250,21 @@ const EmployeeProfileView = ({ employeeId = "1" }) => {
             </div>
           </div>
 
-          <div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: theme.spacing.sm,
+            }}
+          >
             <label
               style={{
-                display: "block",
                 fontSize: "14px",
                 fontWeight: "500",
                 color: theme.colors.text.secondary,
-                marginBottom: theme.spacing.xs,
               }}
             >
-              Contact Number
-            </label>
-            <div
-              style={{
-                fontSize: "16px",
-                color: theme.colors.text.primary,
-              }}
-            >
-              {employee.personalDetails?.contactNumber || "N/A"}
-            </div>
-          </div>
-
-          <div>
-            <label
-              style={{
-                display: "block",
-                fontSize: "14px",
-                fontWeight: "500",
-                color: theme.colors.text.secondary,
-                marginBottom: theme.spacing.xs,
-              }}
-            >
-              Email Address
+              Email Address:
             </label>
             <div
               style={{
@@ -258,17 +276,151 @@ const EmployeeProfileView = ({ employeeId = "1" }) => {
             </div>
           </div>
 
-          <div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: theme.spacing.sm,
+            }}
+          >
             <label
               style={{
-                display: "block",
                 fontSize: "14px",
                 fontWeight: "500",
                 color: theme.colors.text.secondary,
-                marginBottom: theme.spacing.xs,
               }}
             >
-              Address
+              Contact Number:
+            </label>
+            <div
+              style={{
+                fontSize: "16px",
+                color: theme.colors.text.primary,
+              }}
+            >
+              {employee.personalDetails?.contactNumber || "N/A"}
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: theme.spacing.sm,
+            }}
+          >
+            <label
+              style={{
+                fontSize: "14px",
+                fontWeight: "500",
+                color: theme.colors.text.secondary,
+              }}
+            >
+              Gender:
+            </label>
+            <div
+              style={{
+                fontSize: "16px",
+                color: theme.colors.text.primary,
+              }}
+            >
+              {employee.personalDetails?.gender || "N/A"}
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: theme.spacing.sm,
+            }}
+          >
+            <label
+              style={{
+                fontSize: "14px",
+                fontWeight: "500",
+                color: theme.colors.text.secondary,
+              }}
+            >
+              Marital Status:
+            </label>
+            <div
+              style={{
+                fontSize: "16px",
+                color: theme.colors.text.primary,
+              }}
+            >
+              {employee.personalDetails?.maritalStatus || "N/A"}
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: theme.spacing.sm,
+            }}
+          >
+            <label
+              style={{
+                fontSize: "14px",
+                fontWeight: "500",
+                color: theme.colors.text.secondary,
+              }}
+            >
+              Father's Name:
+            </label>
+            <div
+              style={{
+                fontSize: "16px",
+                color: theme.colors.text.primary,
+              }}
+            >
+              {employee.personalDetails?.fatherName || "N/A"}
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: theme.spacing.sm,
+            }}
+          >
+            <label
+              style={{
+                fontSize: "14px",
+                fontWeight: "500",
+                color: theme.colors.text.secondary,
+              }}
+            >
+              ID Number:
+            </label>
+            <div
+              style={{
+                fontSize: "16px",
+                color: theme.colors.text.primary,
+              }}
+            >
+              {employee.personalDetails?.idNumber || "N/A"}
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: theme.spacing.sm,
+            }}
+          >
+            <label
+              style={{
+                fontSize: "14px",
+                fontWeight: "500",
+                color: theme.colors.text.secondary,
+              }}
+            >
+              Address:
             </label>
             <div
               style={{
@@ -277,6 +429,32 @@ const EmployeeProfileView = ({ employeeId = "1" }) => {
               }}
             >
               {employee.personalDetails?.address || "N/A"}
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: theme.spacing.sm,
+            }}
+          >
+            <label
+              style={{
+                fontSize: "14px",
+                fontWeight: "500",
+                color: theme.colors.text.secondary,
+              }}
+            >
+              Country:
+            </label>
+            <div
+              style={{
+                fontSize: "16px",
+                color: theme.colors.text.primary,
+              }}
+            >
+              {employee.personalDetails?.country || "N/A"}
             </div>
           </div>
         </div>
@@ -322,6 +500,27 @@ const EmployeeProfileView = ({ employeeId = "1" }) => {
                 marginBottom: theme.spacing.xs,
               }}
             >
+              Employee Code
+            </label>
+            <div
+              style={{
+                fontSize: "16px",
+                color: theme.colors.text.primary,
+              }}
+            >
+              {employee.professionalDetails?.empCode || "N/A"}
+            </div>
+          </div>
+          <div>
+            <label
+              style={{
+                display: "block",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: theme.colors.text.secondary,
+                marginBottom: theme.spacing.xs,
+              }}
+            >
               Designation
             </label>
             <div
@@ -356,7 +555,33 @@ const EmployeeProfileView = ({ employeeId = "1" }) => {
             </div>
           </div>
 
-          <div style={{ gridColumn: "1 / -1" }}>
+          <div>
+            <label
+              style={{
+                display: "block",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: theme.colors.text.secondary,
+                marginBottom: theme.spacing.xs,
+              }}
+            >
+              Date of Joining
+            </label>
+            <div
+              style={{
+                fontSize: "16px",
+                color: theme.colors.text.primary,
+              }}
+            >
+              {employee.professionalDetails?.dateOfJoining
+                ? new Date(
+                    employee.professionalDetails.dateOfJoining
+                  ).toLocaleDateString()
+                : "N/A"}
+            </div>
+          </div>
+
+          <div>
             <label
               style={{
                 display: "block",
@@ -454,8 +679,12 @@ const EmployeeProfileView = ({ employeeId = "1" }) => {
                   textDecoration: "underline",
                   transition: theme.transitions.fast,
                 }}
-                onMouseOver={(e) => (e.target.style.color = theme.colors.primaryDark)}
-                onMouseOut={(e) => (e.target.style.color = theme.colors.warning)}
+                onMouseOver={(e) =>
+                  (e.target.style.color = theme.colors.primaryDark)
+                }
+                onMouseOut={(e) =>
+                  (e.target.style.color = theme.colors.warning)
+                }
               >
                 View
               </button>

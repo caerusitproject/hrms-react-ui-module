@@ -10,11 +10,11 @@ import CompanyLogo from "../../assets/caerus-logo.png";
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isMobile, setIsMobile] = useState(false);
+
   const { login, isAuthenticated, loading, error } = useAuth();
   const dispatch = useDispatch();
   const navigate = useNavigate();
-
+  const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 768);
@@ -50,7 +50,7 @@ const Login = () => {
         loginTime: new Date().toISOString(),
       };
 
-     // dispatch(loginSuccess({ user: userData, token: null }));
+      // dispatch(loginSuccess({ user: userData, token: null }));
     }
   };
 

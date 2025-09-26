@@ -1,42 +1,53 @@
 import React, { useState, useEffect } from "react";
-import { fetchEmployeeData, saveEmployeeData } from "./employeeService";
+import { useForm } from "react-hook-form";
+import { EmployeeAPI } from "../../api/employeeApi";
 import { theme } from "../../theme/theme";
 import CustomLoader from "../../components/common/CustomLoader";
 import { useNavigate, useParams } from "react-router-dom";
 import Button from "../../components/common/Button";
+import Input from "../../components/common/Input";
 
 const EmployeeProfileEdit = () => {
-  const { id } = useParams(); // Get id from URL params
-  const isEditMode = !!id; // Determine mode based on presence of id
-  const [formData, setFormData] = useState({
-    personalDetails: {
-      fullName: "",
-      dateOfBirth: "",
-      gender: "",
-      maritalStatus: "",
-      fatherName: "",
-      idNumber: "",
-    },
-    contactDetails: {
-      workEmail: "",
-      phone: "",
-      address: "",
-    },
-    employmentDetails: {
-      employeeId: "",
-      jobTitle: "",
-      department: "",
-      reportingManager: "",
-      employmentType: "",
-      dateOfJoining: "",
-      status: "",
+  const { id } = useParams();
+  const isEditMode = !!id;
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    setFocus,
+    formState: { errors },
+  } = useForm({
+    defaultValues: {
+      personalDetails: {
+        fullName: "",
+        dateOfBirth: "",
+        gender: "",
+        maritalStatus: "",
+        fatherName: "",
+        idNumber: "",
+        email: "",
+        contactNumber: "",
+        address: "",
+        city: "",
+        country: "",
+      },
+      professionalDetails: {
+        empCode: "",
+        designation: "",
+        department: "",
+        reportingManager: "",
+        employmentType: "",
+        dateOfJoining: "",
+        status: "",
+      },
     },
   });
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [documents, setDocuments] = useState([
     { name: "Offer Letter", icon: "📄" },
-    { name: "Aadhaar Card", icon: "🆔" },
-    { name: "PAN Card", icon: "📋" },
+    { name: "ID Proof", icon: "🆔" },
+    { name: "Tax Document", icon: "📋" },
   ]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newDocument, setNewDocument] = useState({ name: "", file: null });
@@ -44,82 +55,98 @@ const EmployeeProfileEdit = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const [isMobile, setIsMobile] = useState(false);
 
   const handleCancel = () => {
     navigate("/employee-profile");
   };
 
   useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  useEffect(() => {
     const loadEmployeeData = async () => {
       if (!isEditMode) {
-        // Create mode: No fetch, use defaults
         setLoading(false);
         return;
       }
 
       try {
         setLoading(true);
-        const data = await fetchEmployeeData(id);
-        setFormData({
-          personalDetails: {
-            fullName: data.name || "",
-            dateOfBirth: data.dateOfBirth || "",
-            gender: data.gender || "",
-            maritalStatus: data.maritalStatus || "",
-            fatherName: data.fatherName || "",
-            idNumber: data.idNumber || "",
-          },
-          contactDetails: {
-            workEmail: data.email || "",
-            phone: data.mobile || data.phone || "",
-            address: [data.address, data.city, data.country].filter(Boolean).join(", ") || "",
-          },
-          employmentDetails: {
-            employeeId: data.empCode || "",
-            jobTitle: data.department || "",
-            department: data.department || "",
-            reportingManager: data.professionalDetails?.reportingManager || "",
-            employmentType: "",
-            dateOfJoining: data.joiningDate || "",
-            status: data.state === "ACTIVE" ? "Active" : (data.state || ""),
-          },
-        });
+        const data = await EmployeeAPI.fetchEmployeeData(id);
+        console.log("Fetched employee data:", data);
+        setValue("personalDetails.fullName", data.name || "");
+        setValue("personalDetails.dateOfBirth", data.dateOfBirth || "");
+        setValue("personalDetails.gender", data.gender || "");
+        setValue("personalDetails.maritalStatus", data.maritalStatus || "");
+        setValue("personalDetails.fatherName", data.fatherName || "");
+        setValue("personalDetails.idNumber", data.idNumber || "");
+        setValue("personalDetails.email", data.email || "");
+        setValue(
+          "personalDetails.contactNumber",
+          data.mobile || data.phone || ""
+        );
+        setValue("personalDetails.address", data.address || "");
+        setValue("personalDetails.city", data.city || "");
+        setValue("personalDetails.country", data.country || "");
+        setValue("professionalDetails.empCode", data.empCode || "");
+        setValue("professionalDetails.designation", data.department || "");
+        setValue("professionalDetails.department", data.department || "");
+        setValue("professionalDetails.reportingManager", "N/A");
+        setValue("professionalDetails.employmentType", "");
+        setValue("professionalDetails.dateOfJoining", data.joiningDate || "");
+        setValue("professionalDetails.status", data.state || "");
       } catch (err) {
-        setError(err.message.includes("CORS")
-          ? "Failed to connect to the server. Please ensure the backend is configured to allow requests from this application."
-          : err.message);
+        setError(
+          err.message.includes("CORS")
+            ? "Failed to connect to the server. Please ensure the backend is configured to allow requests from this application."
+            : err.message
+        );
       } finally {
         setLoading(false);
       }
     };
 
     loadEmployeeData();
-  }, [id, isEditMode]);
+  }, [id, isEditMode, setValue]);
 
-  const updateFormData = (section, field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: value,
-      },
-    }));
-  };
-
-  const handleSave = async () => {
+  const onSubmit = async (formData) => {
     try {
       setSaving(true);
-      const normalizedData = {
-        ...formData,
-        employmentDetails: {
-          ...formData.employmentDetails,
-          status: formData.employmentDetails.status === "Active" ? "ACTIVE" : formData.employmentDetails.status,
-        },
+      const apiData = {
+        name: formData.personalDetails.fullName,
+        dateOfBirth: formData.personalDetails.dateOfBirth,
+        gender: formData.personalDetails.gender,
+        maritalStatus: formData.personalDetails.maritalStatus,
+        fatherName: formData.personalDetails.fatherName,
+        idNumber: formData.personalDetails.idNumber,
+        email: formData.personalDetails.email,
+        mobile: formData.personalDetails.contactNumber,
+        phone: formData.personalDetails.contactNumber,
+        address: formData.personalDetails.address,
+        city: formData.personalDetails.city,
+        country: formData.personalDetails.country,
+        empCode: formData.professionalDetails.empCode,
+        department: formData.professionalDetails.department,
+        joiningDate: formData.professionalDetails.dateOfJoining,
+        state: formData.professionalDetails.status,
       };
-      await saveEmployeeData(normalizedData, id); // Pass id for update/create logic in service
+      await EmployeeAPI.saveEmployeeData(apiData, id);
       navigate("/employee-profile");
     } catch (err) {
       setError(err.message);
+      const firstErrorField = Object.keys(errors)[0];
+      if (firstErrorField) {
+        const fieldPath = Object.keys(errors[firstErrorField])[0];
+        setFocus(`${firstErrorField}.${fieldPath}`);
+      }
     } finally {
       setSaving(false);
     }
@@ -137,7 +164,7 @@ const EmployeeProfileEdit = () => {
   };
 
   const handleDocumentRemove = (index) => {
-    setDocuments(prev => prev.filter((_, i) => i !== index));
+    setDocuments((prev) => prev.filter((_, i) => i !== index));
   };
 
   if (loading) {
@@ -164,9 +191,22 @@ const EmployeeProfileEdit = () => {
   }
 
   const DocumentModal = () => {
-    const handleModalSave = () => {
-      if (newDocument.name && newDocument.file) {
-        setDocuments(prev => [...prev, { name: newDocument.name, icon: "📄", file: newDocument.file }]);
+    const {
+      register: modalRegister,
+      handleSubmit: handleModalSubmit,
+      formState: { errors: modalErrors },
+    } = useForm({
+      defaultValues: {
+        documentName: "",
+      },
+    });
+
+    const handleModalSave = (data) => {
+      if (data.documentName && newDocument.file) {
+        setDocuments((prev) => [
+          ...prev,
+          { name: data.documentName, icon: "📄", file: newDocument.file },
+        ]);
         setNewDocument({ name: "", file: null });
         setIsModalOpen(false);
       }
@@ -223,17 +263,23 @@ const EmployeeProfileEdit = () => {
           </h2>
           <Input
             label="Document Name"
-            value={newDocument.name}
-            onChange={(value) => setNewDocument(prev => ({ ...prev, name: value }))}
+            name="documentName"
+            register={modalRegister}
             required
+            errors={modalErrors}
           />
-          <div style={{ marginBottom: theme.spacing.md, marginTop: theme.spacing.md }}>
+          <div
+            style={{
+              marginBottom: theme.spacing.md,
+              marginTop: theme.spacing.md,
+            }}
+          >
             <label
               style={{
                 display: "block",
                 fontSize: "14px",
                 fontWeight: "500",
-                color: theme.colors.text.secondary,
+                color: "#333333",
                 marginBottom: theme.spacing.xs,
               }}
             >
@@ -241,24 +287,37 @@ const EmployeeProfileEdit = () => {
             </label>
             <input
               type="file"
-              onChange={(e) => setNewDocument(prev => ({ ...prev, file: e.target.files[0] }))}
+              onChange={(e) =>
+                setNewDocument((prev) => ({ ...prev, file: e.target.files[0] }))
+              }
               style={{
                 width: "100%",
+                maxWidth: "300px",
                 padding: theme.spacing.sm,
                 border: `1px solid ${theme.colors.border}`,
                 borderRadius: theme.borderRadius.small,
                 fontSize: "16px",
-                color: theme.colors.text.primary,
-                backgroundColor: theme.colors.surface,
+                color: "#222",
+                backgroundColor: "#ffffff",
                 boxSizing: "border-box",
               }}
             />
           </div>
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: theme.spacing.sm }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: theme.spacing.sm,
+            }}
+          >
             <Button type="tertiary" onClick={() => setIsModalOpen(false)}>
               Cancel
             </Button>
-            <Button type="primary" onClick={handleModalSave} disabled={!newDocument.name || !newDocument.file}>
+            <Button
+              type="primary"
+              onClick={handleModalSubmit(handleModalSave)}
+              disabled={!newDocument.file}
+            >
               Save
             </Button>
           </div>
@@ -269,6 +328,25 @@ const EmployeeProfileEdit = () => {
 
   return (
     <div>
+      <style>
+        {`
+          @media (max-width: 768px) {
+            .form-grid {
+              grid-template-columns: 1fr !important;
+            }
+            .header {
+              flex-direction: column !important;
+              align-items: center !important;
+              text-align: center;
+            }
+            .header > div:nth-child(2) {
+              min-width: unset !important;
+              margin-top: ${theme.spacing.md};
+              width: 200px; /* Reduced width for Full Name input */
+            }
+          }
+        `}
+      </style>
 
       {/* Top Bar with Title and Buttons */}
       <div
@@ -277,6 +355,12 @@ const EmployeeProfileEdit = () => {
           justifyContent: "space-between",
           alignItems: "center",
           marginBottom: theme.spacing.md,
+          position: "sticky",
+          top: 0,
+          //backgroundColor: theme.colors.surface, // ✅ prevents overlap
+          //zIndex: 1000, // ✅ higher z-index so it stays above content
+          padding: `${theme.spacing.sm} ${theme.spacing.md}`, // ✅ space left & right
+          //boxShadow: "0 2px 6px rgba(0,0,0,0.05)", // ✅ subtle shadow for separation
         }}
       >
         <h1
@@ -293,21 +377,31 @@ const EmployeeProfileEdit = () => {
           <Button type="tertiary" onClick={handleCancel}>
             Cancel
           </Button>
-          <Button type="primary" onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : (isEditMode ? "Save Changes" : "Create Employee")}
+          <Button
+            type="primary"
+            onClick={handleSubmit(onSubmit)}
+            disabled={saving}
+          >
+            {saving
+              ? "Saving..."
+              : isEditMode
+              ? "Save Changes"
+              : "Create Employee"}
           </Button>
         </div>
       </div>
 
-      <p
+      {/* <p
         style={{
           fontSize: "14px",
           color: theme.colors.text.secondary,
           marginBottom: theme.spacing.lg,
         }}
       >
-        {isEditMode ? "Make changes to the employee's details and documents." : "Fill in the details to create a new employee."}
-      </p>
+        {isEditMode
+          ? "Make changes to the employee's details and documents."
+          : "Fill in the details to create a new employee."}
+      </p> */}
 
       {/* Header Section */}
       <div
@@ -315,7 +409,7 @@ const EmployeeProfileEdit = () => {
         style={{
           backgroundColor: theme.colors.surface,
           borderRadius: theme.borderRadius.large,
-          padding: theme.spacing.xl,
+          padding: isMobile ? theme.spacing.md : theme.spacing.xl,
           marginBottom: theme.spacing.lg,
           boxShadow: theme.shadows.small,
           display: "flex",
@@ -340,10 +434,17 @@ const EmployeeProfileEdit = () => {
               fontSize: "24px",
               fontWeight: "600",
               color: theme.colors.text.secondary,
-              backgroundColor: !avatarPreview ? theme.colors.surfaceVariant : "transparent",
+              backgroundColor: !avatarPreview
+                ? theme.colors.surfaceVariant
+                : "transparent",
             }}
           >
-            {!avatarPreview && formData.personalDetails.fullName.split(" ").map(n => n[0]).join("")}
+            {!avatarPreview &&
+              (watch("personalDetails.fullName")
+                ?.split(" ")
+                .map((n) => n[0])
+                .join("") ||
+                "")}
           </div>
           <label
             htmlFor="avatar-upload"
@@ -376,48 +477,98 @@ const EmployeeProfileEdit = () => {
         <div style={{ flex: 1, minWidth: "200px" }}>
           <Input
             label="Full Name"
-            value={formData.personalDetails.fullName}
-            onChange={(value) => updateFormData("personalDetails", "fullName", value)}
+            name="personalDetails.fullName"
+            register={register}
             required
+            errors={errors}
+            //style={{ maxWidth: "200px" }}
           />
-          <p
-            style={{
-              margin: 0,
-              fontSize: "14px",
-              color: theme.colors.text.secondary,
-            }}
-          >
-            Joined on {formData.employmentDetails.dateOfJoining ? new Date(formData.employmentDetails.dateOfJoining).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : "N/A"}
-          </p>
         </div>
       </div>
 
       {/* Personal Details Section */}
       <FormCard title="Personal Details">
         <div
-          className="profile-grid"
+          className="form-grid"
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: theme.spacing.sm,
+            gridTemplateColumns: "1fr 1fr",
+            gap: theme.spacing.xs /* Increased gap between fields */,
+            padding: `0 ${theme.spacing.md}`,
           }}
         >
           <Input
-            label="Contact Number"
-            value={formData.contactDetails.phone}
-            onChange={(value) => updateFormData("contactDetails", "phone", value)}
+            label="Date of Birth"
+            name="personalDetails.dateOfBirth"
+            type="date"
+            register={register}
+            errors={errors}
+            // style={{ maxWidth: "275px" }}
+          />
+          <Input
+            label="Gender"
+            name="personalDetails.gender"
+            register={register}
+            errors={errors}
+            //style={{ maxWidth: "275px" }}
+          />
+          <Input
+            label="Marital Status"
+            name="personalDetails.maritalStatus"
+            register={register}
+            errors={errors}
+            //style={{ maxWidth: "275px" }}
+          />
+          <Input
+            label="Father's Name"
+            name="personalDetails.fatherName"
+            register={register}
+            errors={errors}
+            //style={{ maxWidth: "275px" }}
+          />
+          <Input
+            label="ID Number"
+            name="personalDetails.idNumber"
+            register={register}
+            errors={errors}
+            // style={{ maxWidth: "275px" }}
           />
           <Input
             label="Email Address"
+            name="personalDetails.email"
             type="email"
-            value={formData.contactDetails.workEmail}
-            onChange={(value) => updateFormData("contactDetails", "workEmail", value)}
+            register={register}
             required
+            errors={errors}
+            // style={{ maxWidth: "275px" }}
+          />
+          <Input
+            label="Contact Number"
+            name="personalDetails.contactNumber"
+            register={register}
+            errors={errors}
+            //style={{ maxWidth: "275px" }}
           />
           <Input
             label="Address"
-            value={formData.contactDetails.address}
-            onChange={(value) => updateFormData("contactDetails", "address", value)}
+            name="personalDetails.address"
+            register={register}
+            errors={errors}
+            //style={{ minWidth: "275px" }}
+          />
+          <Input
+            label="City"
+            name="personalDetails.city"
+            register={register}
+            errors={errors}
+            //style={{ maxWidth: "275px" }}
+          />
+          <Input
+            label="Country"
+            name="personalDetails.country"
+            register={register}
+            errors={errors}
+            //style={{ maxWidth: "2895px" }}
           />
         </div>
       </FormCard>
@@ -425,29 +576,66 @@ const EmployeeProfileEdit = () => {
       {/* Professional Details Section */}
       <FormCard title="Professional Details">
         <div
-          className="profile-grid"
+          className="form-grid"
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: theme.spacing.sm,
+            gridTemplateColumns: "1fr 1fr",
+            gap: theme.spacing.xs /* Increased gap between fields */,
+            padding: `0 ${theme.spacing.md}`,
           }}
         >
           <Input
+            label="Employee Code"
+            name="professionalDetails.empCode"
+            register={register}
+            errors={errors}
+            //style={{ maxWidth: "275px" }}
+          />
+          <Input
             label="Designation"
-            value={formData.employmentDetails.jobTitle}
-            onChange={(value) => updateFormData("employmentDetails", "jobTitle", value)}
+            name="professionalDetails.designation"
+            register={register}
             required
+            errors={errors}
+            //style={{ maxWidth: "275px" }}
           />
           <Input
             label="Department"
-            value={formData.employmentDetails.department}
-            onChange={(value) => updateFormData("employmentDetails", "department", value)}
+            name="professionalDetails.department"
+            register={register}
             required
+            errors={errors}
+            //style={{ maxWidth: "275px" }}
           />
           <Input
             label="Reporting Manager"
-            value={formData.employmentDetails.reportingManager}
-            onChange={(value) => updateFormData("employmentDetails", "reportingManager", value)}
+            name="professionalDetails.reportingManager"
+            register={register}
+            errors={errors}
+            // style={{ maxWidth: "275px" }}
+          />
+          <Input
+            label="Employment Type"
+            name="professionalDetails.employmentType"
+            register={register}
+            errors={errors}
+            //style={{ maxWidth: "275px" }}
+          />
+          <Input
+            label="Date of Joining"
+            name="professionalDetails.dateOfJoining"
+            type="date"
+            register={register}
+            required
+            errors={errors}
+            //style={{ maxWidth: "275px" }}
+          />
+          <Input
+            label="Status"
+            name="professionalDetails.status"
+            register={register}
+            errors={errors}
+            //style={{ maxWidth: "375px" }}
           />
         </div>
       </FormCard>
@@ -509,7 +697,12 @@ const EmployeeProfileEdit = () => {
         <Button
           type="secondary"
           onClick={handleAddDocument}
-          style={{ marginTop: theme.spacing.md, display: "block", marginLeft: "auto", marginRight: "auto" }}
+          style={{
+            marginTop: theme.spacing.xxl,
+            display: "block",
+            marginLeft: "auto",
+            marginRight: "auto",
+          }}
         >
           + Add Document
         </Button>
@@ -542,38 +735,6 @@ const FormCard = ({ title, children }) => (
       {title}
     </h2>
     {children}
-  </div>
-);
-
-const Input = ({ label, value, onChange, type = "text", required = false, disabled = false }) => (
-  <div style={{ marginBottom: theme.spacing.md }}>
-    <label
-      style={{
-        display: "block",
-        fontSize: "14px",
-        fontWeight: "500",
-        color: theme.colors.text.secondary,
-        marginBottom: theme.spacing.xs,
-      }}
-    >
-      {label} {required && <span style={{ color: theme.colors.error }}>*</span>}
-    </label>
-    <input
-      type={type}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      disabled={disabled}
-      style={{
-        width: "100%",
-        padding: theme.spacing.sm,
-        border: `1px solid ${theme.colors.border}`,
-        borderRadius: theme.borderRadius.small,
-        fontSize: "16px",
-        color: theme.colors.text.primary,
-        backgroundColor: theme.colors.surface,
-        boxSizing: "border-box",
-      }}
-    />
   </div>
 );
 

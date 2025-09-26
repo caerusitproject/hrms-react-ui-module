@@ -55,7 +55,7 @@ const MainLayout = () => {
             padding: "2px",
             fontSize: isMobile ? "20px" : "16px",
             cursor: "pointer",
-            marginLeft: isMobile ? "0px" : "25px",
+            marginLeft: isMobile ? "6px" : "25px",
             marginTop: isMobile ? "0px" : "12px",
             boxShadow: theme.shadows.small,
           }}
@@ -78,6 +78,7 @@ const MainLayout = () => {
           maxWidth: "100vw",
           display: "flex",
           flexDirection: "column",
+          marginTop: isMobile ? "20px" : "10px",
         }}
         onClick={() => isMobile && !sidenavCollapsed && toggleSidenav()}
       >
