@@ -96,6 +96,14 @@ const AppRoutes = () => {
               path="attendance"
               element={
                 <Suspense fallback={<CustomLoader />}>
+                  <Attendance />
+                </Suspense>
+              }
+            />
+            <Route
+              path="leave-management"
+              element={
+                <Suspense fallback={<CustomLoader />}>
                   <Leave />
                 </Suspense>
               }

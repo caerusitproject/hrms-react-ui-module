@@ -35,13 +35,13 @@ export const menuItems = [
     key: "attendance",
     requiredRoles: ["EMPLOYEE", "TEAM MANAGER", "HR", "ADMIN"],
   },
-  // {
-  //   path: "/attendance",
-  //   label: "Attendance",
-  //   icon: ATTENDANCE_STATUS.PRESENT.icon,
-  //   key: "attendance",
-  //   requiredRoles: ["EMPLOYEE", "TEAM MANAGER", "HR", "ADMIN"],
-  // },
+  {
+    path: "/leave-management",
+    label: "Leave Management",
+    icon: HomeIcon,
+    key: "leave-management",
+    requiredRoles: ["EMPLOYEE", "TEAM MANAGER", "HR", "ADMIN"],
+  },
   {
     path: "/dashboard",
     label: "Dashboard",
