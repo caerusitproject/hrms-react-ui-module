@@ -4,6 +4,7 @@ import { theme } from "../../theme/theme";
 import CustomLoader from "../../components/common/CustomLoader";
 import Button from "../../components/common/Button";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
 
 const EmployeeProfileView = ({ employeeId = "1" }) => {
   const [employee, setEmployee] = useState(null);
@@ -11,6 +12,7 @@ const EmployeeProfileView = ({ employeeId = "1" }) => {
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     const loadEmployeeData = async () => {
@@ -106,6 +108,7 @@ const EmployeeProfileView = ({ employeeId = "1" }) => {
       </style>
 
       {/* Button Section */}
+      {user?.role && user.role === 'ADMIN' && (
       <div
         style={{
           padding: theme.spacing.md,
@@ -118,6 +121,7 @@ const EmployeeProfileView = ({ employeeId = "1" }) => {
           {isEditing ? "Cancel" : "Edit Profile"}
         </Button>
       </div>
+      )}
 
       {/* Header Section */}
       <div
