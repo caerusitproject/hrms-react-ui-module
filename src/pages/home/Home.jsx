@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useAuth } from "../../hooks/useAuth";
 import { theme } from "../../theme/theme";
+import {EmployeeAPI} from "../../api/employeeApi";
 
 const Home = () => {
   const { user, isAuthenticated } = useAuth(); // Moved useAuth to top level
@@ -20,6 +21,8 @@ const Home = () => {
     console.log("Context API State (useAuth):", { isAuthenticated, user });
     console.log("Redux Auth State:", reduxAuthState);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    EmployeeAPI.cats().then(res => console.log(res.data));
+
   }, []); // Empty array to run only on mount
 
   const statsData = [

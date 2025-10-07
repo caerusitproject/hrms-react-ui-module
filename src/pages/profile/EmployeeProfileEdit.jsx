@@ -80,6 +80,7 @@ const EmployeeProfileEdit = () => {
 
       try {
         setLoading(true);
+        console.log("Fetching data for employee ID:", id);
         const data = await EmployeeAPI.fetchEmployeeData(id);
         console.log("Fetched employee data:", data);
         setValue("personalDetails.fullName", data.name || "");

@@ -56,9 +56,9 @@ export const EmployeeAPI = {
     async fetchEmployeeData(employeeId) {
         const response = await fetch(`${LOCAL_API}/employees/${employeeId}`, {
         });
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
+        // if (!response.ok) {
+        //     throw new Error(`HTTP error! Status: ${response.status}`);
+        // }
         return response.json();
     },
     

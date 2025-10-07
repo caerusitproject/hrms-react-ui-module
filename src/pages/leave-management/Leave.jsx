@@ -47,7 +47,11 @@ const Leave = () => {
       const dayOfWeek = current.getDay(); // 0=Sunday, 6=Saturday
 
       // ✅ Allow only Mon–Fri, skip Sat/Sun + holidays
-      if (dayOfWeek !== 0 && dayOfWeek !== 6 && (!event || event.type !== "Holiday")) {
+      if (
+        dayOfWeek !== 0 &&
+        dayOfWeek !== 6 &&
+        (!event || event.type !== "Holiday")
+      ) {
         dates.push(dateStr);
       }
       current.setDate(current.getDate() + 1);
@@ -58,7 +62,9 @@ const Leave = () => {
   // ✅ Click/drag handler
   const handleSelectionChange = (dateStr, action) => {
     const clickedDay = new Date(dateStr).getDay();
-    const isHoliday = leaveData.some((e) => e.date === dateStr && e.type === "Holiday");
+    const isHoliday = leaveData.some(
+      (e) => e.date === dateStr && e.type === "Holiday"
+    );
 
     // Skip weekends & holidays instantly
     if (clickedDay === 0 || clickedDay === 6 || isHoliday) return;
@@ -70,7 +76,11 @@ const Leave = () => {
         setDragEnd(dateStr);
         setSelectedDates([dateStr]);
 
-        const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+        const lastDay = new Date(
+          currentDate.getFullYear(),
+          currentDate.getMonth() + 1,
+          0
+        ).getDate();
         const date = new Date(dateStr);
         setShowNextMonthButton(date.getDate() === lastDay);
       } else {
@@ -85,7 +95,11 @@ const Leave = () => {
       const dates = getDatesInRange(dragStart, dateStr, leaveData);
       setSelectedDates(dates);
 
-      const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+      const lastDay = new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth() + 1,
+        0
+      ).getDate();
       const date = new Date(dateStr);
       setShowNextMonthButton(date.getDate() === lastDay);
       setLastDayOfMonth(date.getDate() === lastDay ? dateStr : null);
@@ -94,7 +108,11 @@ const Leave = () => {
 
   const handleEdgeHover = (direction, dayNum) => {
     if (isSelecting) {
-      const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+      const lastDay = new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth() + 1,
+        0
+      ).getDate();
       setShowNextMonthButton(direction === "next" && dayNum === lastDay);
     }
   };
@@ -107,11 +125,14 @@ const Leave = () => {
     if (isSelecting) {
       const newYear = newDate.getFullYear();
       const newMonth = newDate.getMonth();
-      const newDragEndDate = direction > 0
-        ? new Date(newYear, newMonth, 1)
-        : new Date(newYear, newMonth + 1, 0);
+      const newDragEndDate =
+        direction > 0
+          ? new Date(newYear, newMonth, 1)
+          : new Date(newYear, newMonth + 1, 0);
 
-      const newDragEndStr = `${newDragEndDate.getFullYear()}-${String(newDragEndDate.getMonth() + 1).padStart(2, "0")}-${String(newDragEndDate.getDate()).padStart(2, "0")}`;
+      const newDragEndStr = `${newDragEndDate.getFullYear()}-${String(
+        newDragEndDate.getMonth() + 1
+      ).padStart(2, "0")}-${String(newDragEndDate.getDate()).padStart(2, "0")}`;
       setDragEnd(newDragEndStr);
       const dates = getDatesInRange(dragStart, newDragEndStr, leaveData);
       setSelectedDates(dates);
@@ -146,18 +167,26 @@ const Leave = () => {
   };
 
   const removeLeaveDate = (leaveId, dateToRemove) => {
-    setConfirmedLeaves(confirmedLeaves.map(leave => {
-      if (leave.id === leaveId) {
-        const updatedDates = leave.dates.filter(date => date !== dateToRemove);
-        return { ...leave, dates: updatedDates };
-      }
-      return leave;
-    }).filter(leave => leave.dates.length > 0));
+    setConfirmedLeaves(
+      confirmedLeaves
+        .map((leave) => {
+          if (leave.id === leaveId) {
+            const updatedDates = leave.dates.filter(
+              (date) => date !== dateToRemove
+            );
+            return { ...leave, dates: updatedDates };
+          }
+          return leave;
+        })
+        .filter((leave) => leave.dates.length > 0)
+    );
   };
 
   const formatDateRange = (dates) => {
     if (dates.length === 0) return "";
-    return dates.length === 1 ? dates[0] : `${dates[0]} to ${dates[dates.length - 1]}`;
+    return dates.length === 1
+      ? dates[0]
+      : `${dates[0]} to ${dates[dates.length - 1]}`;
   };
 
   // Flatten confirmed leaves for calendar styling
@@ -171,7 +200,7 @@ const Leave = () => {
         maxWidth: "95%",
         //margin: "0 auto",
         //maxHeight: "100%",
-       // height: "100vh",
+        // height: "100vh",
         boxSizing: "border-box",
         //backgroundColor: theme.palette.background.default,
         fontFamily: "Arial, sans-serif",
@@ -204,8 +233,12 @@ const Leave = () => {
               fontSize: "16px",
               transition: "background 0.3s",
             }}
-            onMouseOver={(e) => (e.target.style.background = "rgba(255, 255, 255, 0.3)")}
-            onMouseOut={(e) => (e.target.style.background = "rgba(255, 255, 255, 0.2)")}
+            onMouseOver={(e) =>
+              (e.target.style.background = "rgba(255, 255, 255, 0.3)")
+            }
+            onMouseOut={(e) =>
+              (e.target.style.background = "rgba(255, 255, 255, 0.2)")
+            }
           >
             ←
           </button>
@@ -221,14 +254,25 @@ const Leave = () => {
               fontSize: "16px",
               transition: "background 0.3s",
             }}
-            onMouseOver={(e) => (e.target.style.background = "rgba(255, 255, 255, 0.3)")}
-            onMouseOut={(e) => (e.target.style.background = "rgba(255, 255, 255, 0.2)")}
+            onMouseOver={(e) =>
+              (e.target.style.background = "rgba(255, 255, 255, 0.3)")
+            }
+            onMouseOut={(e) =>
+              (e.target.style.background = "rgba(255, 255, 255, 0.2)")
+            }
           >
             →
           </button>
         </div>
 
-        <h2 style={{ color: "#fff", margin: 0, fontSize: "24px", fontWeight: "600" }}>
+        <h2
+          style={{
+            color: "#fff",
+            margin: 0,
+            fontSize: "24px",
+            fontWeight: "600",
+          }}
+        >
           {isSelectionMode ? "Select Leave Dates" : "Leave Calendar"}
         </h2>
 
@@ -256,7 +300,10 @@ const Leave = () => {
               onClick={handleApplyLeave}
               disabled={selectedDates.length === 0}
               style={{
-                background: selectedDates.length > 0 ? "#28a745" : "rgba(255, 255, 255, 0.3)",
+                background:
+                  selectedDates.length > 0
+                    ? "#28a745"
+                    : "rgba(255, 255, 255, 0.3)",
                 border: "none",
                 color: "#fff",
                 padding: "10px 20px",
@@ -266,8 +313,18 @@ const Leave = () => {
                 fontSize: "14px",
                 transition: "background 0.3s",
               }}
-              onMouseOver={(e) => (e.target.style.background = selectedDates.length > 0 ? "#218838" : "rgba(255, 255, 255, 0.3)")}
-              onMouseOut={(e) => (e.target.style.background = selectedDates.length > 0 ? "#28a745" : "rgba(255, 255, 255, 0.3)")}
+              onMouseOver={(e) =>
+                (e.target.style.background =
+                  selectedDates.length > 0
+                    ? "#218838"
+                    : "rgba(255, 255, 255, 0.3)")
+              }
+              onMouseOut={(e) =>
+                (e.target.style.background =
+                  selectedDates.length > 0
+                    ? "#28a745"
+                    : "rgba(255, 255, 255, 0.3)")
+              }
             >
               Confirm Leave ({selectedDates.length})
             </button>
@@ -318,7 +375,7 @@ const Leave = () => {
             onClick={() => handleMonthChange(1)}
             style={{
               position: "absolute",
-              top: `${41 + 62 + Math.ceil((new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate() + new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay() - 1) / 7) * 60 - 15}px`,
+              bottom: "15px", // Fixed to 5px from bottom
               left: "calc(100% + 10px)",
               background: "#e69346ff",
               border: "none",
@@ -330,8 +387,10 @@ const Leave = () => {
               fontSize: "14px",
               transition: "background 0.3s",
             }}
-            onMouseOver={(e) => (e.currentTarget.style.background = "#885f21ff")}
-            onMouseOut={(e) => (e.currentTarget.style.background = "#885f21ff")}
+            onMouseOver={(e) =>
+              (e.currentTarget.style.background = "#dd911fff")
+            }
+            onMouseOut={(e) => (e.currentTarget.style.background = "#e6a545ff")}
           >
             →
           </button>
