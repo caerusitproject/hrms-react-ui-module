@@ -11,11 +11,11 @@ const Footer = () => {
         backgroundColor: theme.colors.white,
         borderTop: `1px solid ${theme.colors.lightGray}`,
         borderRadius: "15px",
-        padding: `${theme.spacing.md} ${theme.spacing.xl}`,
+        padding: `${theme.spacing.sm} ${theme.spacing.md}`,
         marginTop: "auto",
         marginBottom: "10px",
         marginLeft: `${theme.spacing.md}`,
-         marginRight: `${theme.spacing.md}`,
+        marginRight: `${theme.spacing.md}`,
         textAlign: "center",
         boxShadow: "0 -2px 8px rgba(0, 0, 0, 0.1)",
       }}
@@ -28,14 +28,14 @@ const Footer = () => {
           maxWidth: "1200px",
           margin: "0 auto",
           flexWrap: "wrap",
-          gap: theme.spacing.md,
+          gap: theme.spacing.sm,
         }}
       >
         {/* Left side - Copyright */}
         <div
           style={{
             color: theme.colors.primaryLight,
-            fontSize: "13px",
+            fontSize: "12px",
           }}
         >
           © {currentYear} Caerus. All rights reserved.
@@ -45,14 +45,12 @@ const Footer = () => {
         <div
           style={{
             color: theme.colors.text.primary,
-            fontSize: "13px",
+            fontSize: "12px",
             fontWeight: "500",
           }}
         >
           Employee Management System
         </div>
-
-        
 
         {/* Right side - Version/Links */}
         <div
@@ -60,13 +58,14 @@ const Footer = () => {
             display: "flex",
             gap: theme.spacing.xs,
             alignItems: "center",
-           flexDirection: "column",
+            flexDirection: "column", // default desktop
           }}
+          className="footer-right"
         >
           <span
             style={{
               color: theme.colors.primaryLight,
-              fontSize: "12px",
+              fontSize: "11px",
             }}
           >
             v1.0.0
@@ -75,15 +74,9 @@ const Footer = () => {
             href="/privacy"
             style={{
               color: theme.colors.primaryLight,
-              fontSize: "12px",
+              fontSize: "11px",
               textDecoration: "none",
               transition: theme.transitions.fast,
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.color = theme.colors.primary;
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.color = theme.colors.text.secondary;
             }}
           >
             Privacy Policy
@@ -92,20 +85,27 @@ const Footer = () => {
             href="/terms"
             style={{
               color: theme.colors.primaryLight,
-              fontSize: "12px",
+              fontSize: "11px",
               textDecoration: "none",
               transition: theme.transitions.fast,
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.color = theme.colors.primary;
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.color = theme.colors.text.secondary;
             }}
           >
             Terms of Service
           </a>
         </div>
+
+        <style>
+          {`
+    @media (max-width: 768px) {
+      .footer-right {
+        flex-direction: row !important;
+        justify-content: center;
+        gap: auto !important;
+        width: 100%;
+      }
+    }
+  `}
+        </style>
       </div>
 
       {/* Mobile responsive layout */}
@@ -115,9 +115,14 @@ const Footer = () => {
             footer > div {
               flex-direction: column;
               text-align: center;
+              gap: ${theme.spacing.xs};
             }
             footer > div > div:last-child {
               justify-content: center;
+              gap: 4px;
+            }
+            footer > div > div {
+              font-size: 11px;
             }
           }
         `}

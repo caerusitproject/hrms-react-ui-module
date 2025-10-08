@@ -20,6 +20,7 @@ const About = lazy(() => import("../pages/about/About"));
 const Dashboard = lazy(() => import("../pages/dashboard/Dashboard"));
 const Attendance = lazy(() => import("../pages/leave-management/Attendance"));
 const Leave = lazy(() => import("../pages/leave-management/Leave"));
+const Broadcast = lazy(() => import("../pages/broadcast/Broadcast"));
 const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
 
@@ -118,7 +119,16 @@ const AppRoutes = () => {
                 </ProtectedRoute>
               }
             />
+            <Route
+          path="broadcast"
+          element={
+            <Suspense fallback={<CustomLoader />}>
+              <Broadcast/>
+            </Suspense>
+          }
+        />
           </Route>
+          
 
           {/* Catch-all route for invalid paths */}
           <Route

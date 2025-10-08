@@ -1,10 +1,12 @@
-// menuItems.js (new file)
+// menuItems.js
 import React from 'react';
 import HomeIcon from '@mui/icons-material/Home';
 import PersonIcon from '@mui/icons-material/Person';
 import InfoIcon from '@mui/icons-material/Info';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import { ATTENDANCE_STATUS } from '../../utils/constants';
+import EventAvailableIcon from '@mui/icons-material/EventAvailable'; // Attendance
+import BeachAccessIcon from '@mui/icons-material/BeachAccess'; // Leave management
+import CampaignIcon from '@mui/icons-material/Campaign'; // Broadcast
 
 export const menuItems = [
   {
@@ -21,24 +23,18 @@ export const menuItems = [
     key: "profile",
     requiredRoles: ["EMPLOYEE", "TEAM MANAGER", "HR", "ADMIN"],
   },
+  
   {
-    path: "/about",
-    label: "About",
-    icon: InfoIcon,
-    key: "about",
-    requiredRoles: ["EMPLOYEE", "TEAM MANAGER", "HR", "ADMIN"],
-  },
-   {
     path: "/attendance",
     label: "Attendance",
-    icon: HomeIcon,
+    icon: EventAvailableIcon,
     key: "attendance",
     requiredRoles: ["EMPLOYEE", "TEAM MANAGER", "HR", "ADMIN"],
   },
   {
     path: "/leave-management",
     label: "Leave Management",
-    icon: HomeIcon,
+    icon: BeachAccessIcon,
     key: "leave-management",
     requiredRoles: ["EMPLOYEE", "TEAM MANAGER", "HR", "ADMIN"],
   },
@@ -48,5 +44,19 @@ export const menuItems = [
     icon: DashboardIcon,
     key: "dashboard",
     requiredRoles: ["TEAM MANAGER", "HR", "ADMIN"],
+  },
+  {
+    path: "/broadcast",
+    label: "Broadcast",
+    icon: CampaignIcon,
+    key: "broadcast",
+    requiredRoles: ["EMPLOYEE", "TEAM MANAGER", "HR", "ADMIN"],
+  },
+  {
+    path: "/about",
+    label: "About",
+    icon: InfoIcon,
+    key: "about",
+    requiredRoles: ["EMPLOYEE", "TEAM MANAGER", "HR", "ADMIN"],
   },
 ];
