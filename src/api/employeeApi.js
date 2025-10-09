@@ -5,7 +5,7 @@ import axios from "axios";
 const API = config.webSiteUrl;
 const HIP_API = config.webHipSiteUrl;
 const APPOINTMENT_API = config.patientCare;
-const LOCAL_API = "http://localhost:3000";
+const LOCAL_API = "http://localhost:3000/api";
 
 const getAuthHeaders = () => ({
     'Authorization': `Bearer ${sessionStorage.getItem('token')}`

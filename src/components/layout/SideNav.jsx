@@ -89,32 +89,18 @@ const SideNav = ({ collapsed, onToggle }) => {
       >
         <div
           style={{
-            padding: isMobile ? theme.spacing.sm : theme.spacing.md,
+            padding: isMobile ? "0" : theme.spacing.md,
             borderBottom: `1px solid ${theme.colors.lightGray}`,
             display: "flex",
+            marginRight: isMobile ? theme.spacing.xxl : theme.spacing.md,
             alignItems: "center",
             justifyContent: "space-between",
+           // gap: isMobile ? theme.spacing.sm : theme.spacing.md,
+            //backgroundColor: theme.colors.background,
             minHeight: "80px",
             overflow: "visible",
           }}
         >
-          {!collapsed && (
-            <div style={{ display: "flex", alignItems: "center" }}>
-              <img
-                src={CompanyLogo}
-                alt="Company Logo"
-                style={{
-                  height: isMobile ? "40px" : "48px",
-                  width: isMobile ? "140px" : "180px",
-                  maxWidth: "100%",
-                  objectFit: "contain",
-                  position: "relative",
-                  zIndex: 1,
-                }}
-              />
-            </div>
-          )}
-
           {!collapsed && (
             <button
               onClick={onToggle}
@@ -129,11 +115,29 @@ const SideNav = ({ collapsed, onToggle }) => {
                   ? theme.colors.text.secondary
                   : theme.colors.primary,
                 transition: theme.transitions.fast,
-                marginLeft: isMobile ? theme.spacing.xs : theme.spacing.sm,
+                marginLeft: isMobile ? theme.spacing.lg : theme.spacing.sm,
+                marginRight: isMobile ? theme.spacing.xs: theme.spacing.sm,
+                marginBottom: isMobile ? theme.spacing.sm : "0",
               }}
             >
               ☰
             </button>
+          )}
+          {!collapsed && (
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <img
+                src={CompanyLogo}
+                alt="Company Logo"
+                style={{
+                  height: isMobile ? "40px" : "48px",
+                  width: isMobile ? "240px" : "180px",
+                  maxWidth: "100%",
+                  objectFit: "contain",
+                  position: "relative",
+                  zIndex: 1,
+                }}
+              />
+            </div>
           )}
         </div>
 
