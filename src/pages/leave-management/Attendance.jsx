@@ -1,42 +1,66 @@
 import React, { useState, useEffect } from "react";
 import Calendar from "../../components/common/Calendar";
 import { theme } from "../../theme/theme";
+import { AttendanceAPI } from "../../api/attendanceApi"; // Adjust path as needed
 
-// Attendance Calendar Component
 const Attendance = () => {
-  const [currentDate, setCurrentDate] = useState(new Date()); // Use current system date
-  const today = new Date(2025, 9, 3); // Today's date as per system
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const today = new Date();
+  const empCode = "EMP001"; // Hardcoded for now; can be dynamic via props or context
 
-  const attendanceData = [
-    { date: "2025-10-01", hours: "8.6hrs" },
-    { date: "2025-10-02", hours: "7.9hrs" },
-    { date: "2025-10-03", hours: "8.3hrs" },
-    // { date: "2025-10-04", hours: "Absent" },
-    { date: "2025-10-06", hours: "8.7hrs" },
-    { date: "2025-10-07", hours: "8.5hrs" },
-    { date: "2025-10-08", hours: "Absent" },
-    { date: "2025-10-09", hours: "8.0hrs" },
-    { date: "2025-10-10", hours: "8.2hrs" },
-    // { date: "2025-10-11", hours: "Absent" },
-    { date: "2025-10-13", hours: "7.8hrs" },
-    { date: "2025-10-14", hours: "8.4hrs" },
-    { date: "2025-10-15", hours: "8.6hrs" },
-    { date: "2025-10-16", hours: "8.5hrs" },
-    { date: "2025-10-17", hours: "8.7hrs" },
+  // Fetch attendance data when month or year changes
+  useEffect(() => {
+    const fetchAttendance = async () => {
+      try {
+        setLoading(true);
+        const month = currentDate.getMonth() +1; // 0-based month
+        const year = currentDate.getFullYear();
+        const response = await AttendanceAPI.getAttendanceByEmployee(empCode, month, year);
+        if (response.success) {
+          setAttendanceData(response.data);
+        } else {
+          throw new Error(response.message || "Failed to fetch attendance data");
+        }
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAttendance();
+  }, [currentDate]); // Re-run when currentDate changes
 
-    { date: "2025-10-20", hours: "8.7hrs" },
-    { date: "2025-10-21", hours: "8.3hrs" },
-    { date: "2025-10-22", hours: "8.1hrs" },
-    { date: "2025-10-23", hours: "Absent" },
-    { date: "2025-10-24", hours: "8.6hrs" },
-    // { date: "2025-10-25", hours: "Absent" },
-    // { date: "2025-10-26", hours: "7.9hrs" },
-    { date: "2025-10-27", hours: "8.3hrs" },
-    { date: "2025-10-28", hours: "8.5hrs" },
-    { date: "2025-10-29", hours: "8.2hrs" },
-    { date: "2025-10-30", hours: "8.4hrs" },
-    { date: "2025-10-31", hours: "8.6hrs" },
-  ];
+  // Calculate hours from checkIn and checkOut times
+  const calculateHours = (checkIn, checkOut) => {
+    if (!checkIn || !checkOut) return "Absent";
+    const start = new Date(`1970-01-01T${checkIn}Z`);
+    const end = new Date(`1970-01-01T${checkOut}Z`);
+    const diffMs = end - start;
+    if (diffMs <= 0) return "Absent";
+    const hours = diffMs / (1000 * 60 * 60);
+    return `${hours.toFixed(1)}hrs`;
+  };
+
+  // Transform API data to match Calendar component's events structure
+  const events = attendanceData.map((item) => ({
+    date: item.date,
+    type: item.status === "Absent" ? "Absent" : "Present",
+    label: item.status === "Absent" ? "Absent" : calculateHours(item.checkIn, item.checkOut),
+  }));
+
+  // Calculate total hours, present days, and absent days
+  const totalHours = attendanceData
+    .filter((a) => a.status !== "Absent")
+    .reduce((sum, a) => {
+      const hours = calculateHours(a.checkIn, a.checkOut);
+      return sum + (hours !== "Absent" ? parseFloat(hours) : 0);
+    }, 0);
+
+  const absentDays = attendanceData.filter((a) => a.status === "Absent").length;
+  const presentDays = attendanceData.length - absentDays;
 
   const handleMonthChange = (direction) => {
     const newDate = new Date(currentDate);
@@ -44,47 +68,35 @@ const Attendance = () => {
     setCurrentDate(newDate);
   };
 
-  const handleDateClick = (dateStr) => {
-    const data = attendanceData.find((a) => a.date === dateStr);
-    if (data) {
-      alert(`Date: ${dateStr}\nHours: ${data.hours}`);
-    }
-  };
+  // const handleDateClick = (dateStr) => {
+  //   const data = attendanceData.find((a) => a.date === dateStr);
+  //   if (data) {
+  //     const hours = calculateHours(data.checkIn, data.checkOut);
+  //     alert(`Date: ${dateStr}\nStatus: ${data.status}\nHours: ${hours}`);
+  //   }
+  // };
 
-  const totalHours = attendanceData
-    .filter((a) => a.hours !== "Absent")
-    .reduce(
-      (sum, a) => sum + (a.hours.match(/\d+\.\d+/) ? parseFloat(a.hours) : 0),
-      0
-    );
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
-  const absentDays = attendanceData.filter((a) => a.hours === "Absent").length;
-  const presentDays = attendanceData.length - absentDays;
-
-  // Transform attendanceData to match the events structure expected by Calendar.jsx
-  const events = attendanceData.map((item) => ({
-    date: item.date,
-    type: item.hours === "Absent" ? "Absent" : "Present",
-    label: item.hours,
-  }));
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
 
   return (
     <div
       style={{
-        //padding: "20px",
         width: "100%",
         maxWidth: "95%",
-        //margin: "0 auto",
-        //maxHeight: "100%",
-        // height: "100vh",
         boxSizing: "border-box",
-        //backgroundColor: theme.palette.background.default,
         fontFamily: "Arial, sans-serif",
       }}
     >
       <div
         style={{
-          background: "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)",
+          background: theme.colors.success,
+          boxShadow: theme.shadows.medium,
           padding: "24px",
           borderRadius: "12px",
           marginBottom: "20px",
@@ -123,6 +135,7 @@ const Attendance = () => {
                 borderRadius: "6px",
                 cursor: "pointer",
                 fontSize: "18px",
+                fontWeight: "bold",
               }}
             >
               →
@@ -141,18 +154,18 @@ const Attendance = () => {
             color: "#fff",
           }}
         >
-          {/* <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '32px', fontWeight: '700' }}>{totalHours.toFixed(1)}</div>
-            <div style={{ fontSize: '14px', opacity: 0.9 }}>Total Hours</div>
-          </div> */}
-          {/* <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '32px', fontWeight: '700' }}>{presentDays}</div>
-            <div style={{ fontSize: '14px', opacity: 0.9 }}>Days Present</div>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: "32px", fontWeight: "700" }}>{totalHours.toFixed(1)}</div>
+            <div style={{ fontSize: "14px", opacity: 0.9 }}>Total Hours</div>
           </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '32px', fontWeight: '700' }}>{absentDays}</div>
-            <div style={{ fontSize: '14px', opacity: 0.9 }}>Days Absent</div>
-          </div> */}
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: "32px", fontWeight: "700" }}>{presentDays}</div>
+            <div style={{ fontSize: "14px", opacity: 0.9 }}>Days Present</div>
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: "32px", fontWeight: "700" }}>{absentDays}</div>
+            <div style={{ fontSize: "14px", opacity: 0.9 }}>Days Absent</div>
+          </div>
         </div>
       </div>
 
@@ -161,7 +174,7 @@ const Attendance = () => {
         month={currentDate.getMonth()}
         events={events}
         mode="attendance"
-        onDateClick={handleDateClick}
+        //onDateClick={handleDateClick}
         darkTheme={false}
         today={today}
       />

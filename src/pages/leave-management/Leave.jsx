@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Calendar from "../../components/common/Calendar";
 import { theme } from "../../theme/theme";
 
@@ -12,7 +12,17 @@ const Leave = () => {
   const [showNextMonthButton, setShowNextMonthButton] = useState(false);
   const [lastDayOfMonth, setLastDayOfMonth] = useState(null);
   const [confirmedLeaves, setConfirmedLeaves] = useState([]);
+  const [isMobile, setIsMobile] = useState(false);
   const today = new Date(2025, 9, 3);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   // Dummy leave/holiday dataset
   const leaveData = [
@@ -27,7 +37,7 @@ const Leave = () => {
     { date: "2025-11-15", type: "Holiday", label: "Company Holiday" },
   ];
 
-  // ✅ Range selector with weekends & holidays skipped
+  // Range selector with weekends & holidays skipped
   const getDatesInRange = (start, end, events) => {
     if (!start || !end) return [];
     const startDate = new Date(start);
@@ -46,7 +56,7 @@ const Leave = () => {
       const event = events.find((e) => e.date === dateStr);
       const dayOfWeek = current.getDay(); // 0=Sunday, 6=Saturday
 
-      // ✅ Allow only Mon–Fri, skip Sat/Sun + holidays
+      // Allow only Mon–Fri, skip Sat/Sun + holidays
       if (
         dayOfWeek !== 0 &&
         dayOfWeek !== 6 &&
@@ -59,7 +69,7 @@ const Leave = () => {
     return dates;
   };
 
-  // ✅ Click/drag handler
+  // Click/drag handler
   const handleSelectionChange = (dateStr, action) => {
     const clickedDay = new Date(dateStr).getDay();
     const isHoliday = leaveData.some(
@@ -195,71 +205,71 @@ const Leave = () => {
   return (
     <div
       style={{
-        //padding: "20px",
         width: "100%",
         maxWidth: "95%",
-        //margin: "0 auto",
-        //maxHeight: "100%",
-        // height: "100vh",
         boxSizing: "border-box",
-        //backgroundColor: theme.palette.background.default,
         fontFamily: "Arial, sans-serif",
       }}
     >
       {/* Header */}
       <div
         style={{
-          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-          padding: "20px",
-          borderRadius: "12px",
-          marginBottom: "20px",
+          //background: "linear-gradient(135deg, #ffb74d 0%, #ff9800 100%)",
+          background: theme.colors.primary,
+          padding: isMobile ? "15px 10px" : "20px",
+          borderRadius: isMobile ? "8px" : "12px",
+          marginBottom: isMobile ? "15px" : "20px",
           display: "flex",
+          flexDirection: isMobile ? "column" : "row",
           justifyContent: "space-between",
-          alignItems: "center",
+          alignItems: isMobile ? "stretch" : "center",
+          gap: isMobile ? "15px" : "0",
           boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
         }}
       >
         {/* Nav */}
-        <div style={{ display: "flex", gap: "10px" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "10px",
+            justifyContent: isMobile ? "center" : "flex-start",
+            flexWrap: isMobile ? "wrap" : "nowrap",
+          }}
+        >
           <button
             onClick={() => handleMonthChange(-1)}
             style={{
-              background: "rgba(255, 255, 255, 0.2)",
+              background: theme.colors.white,
               border: "none",
-              color: "#fff",
-              padding: "8px 12px",
+              color: theme.colors.primary,
+              padding: isMobile ? "12px 24px" : "8px 12px",
               borderRadius: "6px",
               cursor: "pointer",
-              fontSize: "16px",
+              fontSize: isMobile ? "16px" : "16px",
               transition: "background 0.3s",
+              flex: isMobile ? "1 1 45%" : "0",
+              minWidth: isMobile ? "100px" : "auto",
+              textAlign: "center",
             }}
-            onMouseOver={(e) =>
-              (e.target.style.background = "rgba(255, 255, 255, 0.3)")
-            }
-            onMouseOut={(e) =>
-              (e.target.style.background = "rgba(255, 255, 255, 0.2)")
-            }
           >
             ←
           </button>
           <button
             onClick={() => handleMonthChange(1)}
             style={{
-              background: "rgba(255, 255, 255, 0.2)",
+              background: theme.colors.white,
               border: "none",
-              color: "#fff",
-              padding: "8px 12px",
+              color: theme.colors.primary,
+              padding: isMobile ? "12px 24px" : "8px 12px",
               borderRadius: "6px",
               cursor: "pointer",
-              fontSize: "16px",
+              fontSize: isMobile ? "16px" : "16px",
               transition: "background 0.3s",
+              flex: isMobile ? "1 1 45%" : "0",
+              minWidth: isMobile ? "100px" : "auto",
+              textAlign: "center",
+              fontWeight: "bold",
             }}
-            onMouseOver={(e) =>
-              (e.target.style.background = "rgba(255, 255, 255, 0.3)")
-            }
-            onMouseOut={(e) =>
-              (e.target.style.background = "rgba(255, 255, 255, 0.2)")
-            }
           >
             →
           </button>
@@ -269,30 +279,43 @@ const Leave = () => {
           style={{
             color: "#fff",
             margin: 0,
-            fontSize: "24px",
+            fontSize: isMobile ? "18px" : "24px",
             fontWeight: "600",
+            textAlign: isMobile ? "center" : "left",
           }}
         >
           {isSelectionMode ? "Select Leave Dates" : "Leave Calendar"}
         </h2>
 
         {isSelectionMode ? (
-          <div style={{ display: "flex", gap: "10px" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              justifyContent: isMobile ? "center" : "flex-end",
+              flexWrap: isMobile ? "wrap" : "nowrap",
+            }}
+          >
             <button
               onClick={handleCancelSelection}
               style={{
                 background: "#dc3545",
                 border: "none",
                 color: "#fff",
-                padding: "10px 20px",
+                padding: isMobile ? "12px 24px" : "10px 20px",
                 borderRadius: "6px",
                 cursor: "pointer",
                 fontWeight: "500",
-                fontSize: "14px",
+                fontSize: isMobile ? "14px" : "14px",
                 transition: "background 0.3s",
+                flex: isMobile ? "1 1 45%" : "0",
+                minWidth: isMobile ? "100px" : "auto",
+                textAlign: "center",
               }}
               onMouseOver={(e) => (e.target.style.background = "#c82333")}
               onMouseOut={(e) => (e.target.style.background = "#dc3545")}
+              onTouchStart={(e) => (e.target.style.background = "#c82333")}
+              onTouchEnd={(e) => (e.target.style.background = "#dc3545")}
             >
               Cancel
             </button>
@@ -302,24 +325,39 @@ const Leave = () => {
               style={{
                 background:
                   selectedDates.length > 0
-                    ? "#28a745"
+                    ? "#fff"
                     : "rgba(255, 255, 255, 0.3)",
                 border: "none",
-                color: "#fff",
-                padding: "10px 20px",
+                color: "#000",
+                padding: isMobile ? "12px 24px" : "10px 20px",
                 borderRadius: "6px",
                 cursor: selectedDates.length > 0 ? "pointer" : "not-allowed",
                 fontWeight: "500",
-                fontSize: "14px",
+                fontSize: isMobile ? "14px" : "14px",
                 transition: "background 0.3s",
+                flex: isMobile ? "1 1 45%" : "0",
+                minWidth: isMobile ? "100px" : "auto",
+                textAlign: "center",
               }}
-              onMouseOver={(e) =>
+              // onMouseOver={(e) =>
+              //   (e.target.style.background =
+              //     selectedDates.length > 0
+              //       ? "#218838"
+              //       : "rgba(255, 255, 255, 0.3)")
+              // }
+              // onMouseOut={(e) =>
+              //   (e.target.style.background =
+              //     selectedDates.length > 0
+              //       ? "#28a745"
+              //       : "rgba(255, 255, 255, 0.3)")
+              // }
+              onTouchStart={(e) =>
                 (e.target.style.background =
                   selectedDates.length > 0
                     ? "#218838"
                     : "rgba(255, 255, 255, 0.3)")
               }
-              onMouseOut={(e) =>
+              onTouchEnd={(e) =>
                 (e.target.style.background =
                   selectedDates.length > 0
                     ? "#28a745"
@@ -333,18 +371,22 @@ const Leave = () => {
           <button
             onClick={() => setIsSelectionMode(true)}
             style={{
-              background: "#28a745",
+              background: "theme.colors.white",
               border: "none",
-              color: "#fff",
-              padding: "10px 20px",
+              color: "#000",
+              padding: isMobile ? "12px 24px" : "10px 20px",
               borderRadius: "6px",
               cursor: "pointer",
               fontWeight: "500",
-              fontSize: "14px",
+              fontSize: isMobile ? "14px" : "14px",
               transition: "background 0.3s",
+              width: isMobile ? "100%" : "auto",
+              textAlign: "center",
             }}
-            onMouseOver={(e) => (e.target.style.background = "#218838")}
-            onMouseOut={(e) => (e.target.style.background = "#28a745")}
+            onMouseOver={(e) => (e.target.style.background = "rgba(255, 255, 255, 0.3)")}
+            onMouseOut={(e) => (e.target.style.background = "rgba(255, 255, 255, 0.3)")}
+            onTouchStart={(e) => (e.target.style.background = "rgba(255, 255, 255, 0.3)")}
+            onTouchEnd={(e) => (e.target.style.background = "rgba(255, 255, 255, 0.3)")}
           >
             Apply for Leave
           </button>
@@ -359,7 +401,7 @@ const Leave = () => {
           events={leaveData}
           mode="leave"
           selectedDates={selectedDates}
-          confirmedDates={allConfirmedDates} // Pass confirmed dates to Calendar
+          confirmedDates={allConfirmedDates}
           onSelectionChange={handleSelectionChange}
           isSelecting={isSelecting}
           dragStart={dragStart}
@@ -370,12 +412,12 @@ const Leave = () => {
           onEdgeHover={handleEdgeHover}
         />
 
-        {showNextMonthButton && (
+        {showNextMonthButton && !isMobile && (
           <button
             onClick={() => handleMonthChange(1)}
             style={{
               position: "absolute",
-              bottom: "15px", // Fixed to 5px from bottom
+              bottom: "15px",
               left: "calc(100% + 10px)",
               background: "#e69346ff",
               border: "none",
@@ -401,18 +443,18 @@ const Leave = () => {
       {confirmedLeaves.length > 0 && (
         <div
           style={{
-            marginTop: "30px",
+            marginTop: isMobile ? "20px" : "30px",
             background: "#fff",
-            padding: "20px",
-            borderRadius: "12px",
+            padding: isMobile ? "15px" : "20px",
+            borderRadius: isMobile ? "8px" : "12px",
             boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
           }}
         >
           <h3
             style={{
               color: "#333",
-              marginBottom: "20px",
-              fontSize: "20px",
+              marginBottom: isMobile ? "15px" : "20px",
+              fontSize: isMobile ? "18px" : "20px",
               fontWeight: "600",
               borderBottom: "2px solid #667eea",
               paddingBottom: "10px",
@@ -427,20 +469,22 @@ const Leave = () => {
                 key={`${leave.id}-${index}`}
                 style={{
                   background: "#f8f9fa",
-                  padding: "15px",
+                  padding: isMobile ? "12px" : "15px",
                   borderRadius: "8px",
-                  marginBottom: "15px",
+                  marginBottom: isMobile ? "12px" : "15px",
                   border: "1px solid #e0e0e0",
                   display: "flex",
+                  flexDirection: isMobile ? "column" : "row",
                   justifyContent: "space-between",
-                  alignItems: "center",
+                  alignItems: isMobile ? "stretch" : "center",
+                  gap: isMobile ? "12px" : "0",
                   backgroundColor: "#a74e57ff",
                 }}
               >
                 <div style={{ flex: 1 }}>
                   <div
                     style={{
-                      fontSize: "16px",
+                      fontSize: isMobile ? "14px" : "16px",
                       fontWeight: "600",
                       color: "#fff",
                       marginBottom: "8px",
@@ -450,9 +494,9 @@ const Leave = () => {
                   </div>
                   <div
                     style={{
-                      fontSize: "14px",
+                      fontSize: isMobile ? "12px" : "14px",
                       color: "#fff",
-                      marginBottom: "8px",
+                      marginBottom: isMobile ? "0" : "8px",
                     }}
                   >
                     Applied on: {leave.appliedOn}
@@ -465,15 +509,18 @@ const Leave = () => {
                     background: "#28a745",
                     border: "none",
                     color: "#fff",
-                    padding: "8px 16px",
+                    padding: isMobile ? "10px 16px" : "8px 16px",
                     borderRadius: "6px",
                     cursor: "pointer",
-                    fontSize: "14px",
+                    fontSize: isMobile ? "13px" : "14px",
                     fontWeight: "500",
                     transition: "background 0.3s",
+                    width: isMobile ? "100%" : "auto",
                   }}
                   onMouseOver={(e) => (e.target.style.background = "#218838")}
                   onMouseOut={(e) => (e.target.style.background = "#28a745")}
+                  onTouchStart={(e) => (e.target.style.background = "#218838")}
+                  onTouchEnd={(e) => (e.target.style.background = "#28a745")}
                 >
                   Remove
                 </button>

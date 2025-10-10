@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from "react";
+"use client";
 
-// Reusable Calendar Component
+import { useState, useEffect } from "react";
+
 const Calendar = ({
   year,
   month,
@@ -14,7 +15,20 @@ const Calendar = ({
   darkTheme = false,
   today,
   onEdgeHover,
+  onDateClick,
 }) => {
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTouching, setIsTouching] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDay = new Date(year, month, 1).getDay();
   const monthName = new Date(year, month).toLocaleString("default", {
@@ -56,14 +70,16 @@ const Calendar = ({
   };
 
   const handleClick = (dateStr, isPast) => {
-    if (isPast) return;
+    if (isPast && mode === "leave") return;
     if (onSelectionChange && isSelectionMode) {
       onSelectionChange(dateStr, "click");
+    } else if (mode === "attendance" && onDateClick) {
+      onDateClick(dateStr);
     }
   };
 
   const handleMouseEnter = (dateStr, isPast, dayNum) => {
-    if (isPast) return;
+    if (isPast && mode === "leave") return;
     if (onSelectionChange && isSelectionMode && isSelecting) {
       onSelectionChange(dateStr, "hover");
       if (dayNum === daysInMonth) {
@@ -72,16 +88,69 @@ const Calendar = ({
     }
   };
 
+  const handleTouchStart = (dateStr, isPast) => {
+    if (isPast && mode === "leave") return;
+    setIsTouching(true);
+    if (onSelectionChange && isSelectionMode) {
+      onSelectionChange(dateStr, "click");
+    } else if (mode === "attendance" && onDateClick) {
+      onDateClick(dateStr);
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isTouching) return;
+    e.preventDefault();
+
+    const touch = e.touches && e.touches[0];
+    if (!touch) return;
+
+    const rawEl = document.elementFromPoint(touch.clientX, touch.clientY);
+    let cellEl = null;
+    if (rawEl) {
+      if (rawEl.closest) {
+        cellEl = rawEl.closest("[data-datestr]");
+      } else {
+        let node = rawEl;
+        while (
+          node &&
+          node !== document.body &&
+          !(node.dataset && node.dataset.datestr)
+        ) {
+          node = node.parentElement;
+        }
+        if (node && node.dataset && node.dataset.datestr) {
+          cellEl = node;
+        }
+      }
+    }
+
+    if (cellEl) {
+      const targetDateStr = cellEl.dataset.datestr;
+      const targetIsPast = cellEl.dataset.ispast === "true";
+      const targetDayNum = Number.parseInt(cellEl.dataset.daynum, 10);
+
+      if (!targetIsPast && onSelectionChange && isSelectionMode) {
+        onSelectionChange(targetDateStr, "hover");
+        if (targetDayNum === daysInMonth) {
+          onEdgeHover && onEdgeHover("next", targetDayNum);
+        }
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsTouching(false);
+  };
+
   const getCellStyle = (dayInfo) => {
     if (!dayInfo) return { background: "transparent" };
 
     const isSelectedDay = isSelected(dayInfo.dateStr);
     const bgColor = darkTheme ? "#1a1a1a" : "#fff";
     const textColor = darkTheme ? "#fff" : "#333";
-    const weekendBg = darkTheme ? "#282828" : "#f0f0f0"; // Match Leave screen weekend style
-    const weekendColor = darkTheme ? "#aaa" : "#777"; // Match Leave screen weekend style
-    const pastBg = "#f8f9fa";
-    const pastColor = "#999";
+    const weekendBg = darkTheme ? "#282828" : "#f0f0f0";
+    const weekendColor = darkTheme ? "#aaa" : "#777";
 
     let style = {
       background: bgColor,
@@ -89,14 +158,7 @@ const Calendar = ({
       border: "1px solid #e0e0e0",
     };
 
-    if (dayInfo.isPast) {
-      style = {
-        background: pastBg,
-        color: pastColor,
-        border: "1px solid #eee",
-        opacity: 0.6,
-      };
-    } else if (mode === "leave") {
+    if (mode === "leave") {
       if (dayInfo.event?.type === "Holiday") {
         style = {
           background: "#ff9b71",
@@ -135,28 +197,39 @@ const Calendar = ({
           background: weekendBg,
           color: weekendColor,
           border: "1px solid #ddd",
-        }; // Updated to match Leave
+        };
       }
     } else if (mode === "attendance") {
-      if (dayInfo.event?.type === "Absent") {
-        style = {
-          background: "#ffe5e5",
-          color: "#d32f2f",
-          border: "1px solid #ffcccc",
-        };
-      } else if (dayInfo.event?.type === "Present") {
-        style = {
-          background: "#e6f8faff",
-          color: "#00796b",
-          border: "1px solid #b2dfdb",
-        };
-      } else if (dayInfo.isWeekend) {
+      if (dayInfo.isWeekend) {
         style = {
           background: weekendBg,
           color: weekendColor,
           border: "1px solid #ddd",
-        }; // Added for attendance mode
+        };
+      } else if (dayInfo.event?.type === "Absent") {
+        style = {
+          background: "#d47272ff",
+          color: "#fff",
+          border: "1px solid #b71c1c",
+        };
+      } else if (dayInfo.event?.type === "Present") {
+        style = {
+          background: "#66c97dff",
+          color: "#fff",
+          border: "1px solid #1e7e34",
+        };
       }
+    }
+
+    // Highlight today
+    if (
+      dayInfo?.dateStr ===
+      `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(
+        2,
+        "0"
+      )}-${String(today.getDate()).padStart(2, "0")}`
+    ) {
+      style.border = "2px solid #000";
     }
 
     return style;
@@ -166,12 +239,15 @@ const Calendar = ({
     <div
       style={{
         background: darkTheme ? "#1a1a1a" : "#fff",
-        padding: "60px",
-        borderRadius: "12px",
-        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+        padding: isMobile ? "15px 8px" : "60px",
+        borderRadius: isMobile ? "8px" : "12px",
+        boxShadow: isMobile
+          ? "0 2px 8px rgba(0, 0, 0, 0.1)"
+          : "0 4px 12px rgba(0, 0, 0, 0.1)",
         width: "100%",
         margin: "0 auto",
-        height: "80vh",
+        height: isMobile ? "auto" : "80vh",
+        minHeight: isMobile ? "450px" : "auto",
         position: "relative",
       }}
     >
@@ -179,11 +255,11 @@ const Calendar = ({
         style={{
           textAlign: "center",
           color: darkTheme ? "#fff" : "#333",
-          marginBottom: "20px",
-          fontSize: "22px",
+          marginBottom: isMobile ? "12px" : "20px",
+          fontSize: isMobile ? "16px" : "22px",
           fontWeight: "600",
           textTransform: "uppercase",
-          letterSpacing: "1px",
+          letterSpacing: isMobile ? "0.5px" : "1px",
         }}
       >
         {monthName} {year}
@@ -193,12 +269,14 @@ const Calendar = ({
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(7, 1fr)",
-          gap: "2px",
+          gap: isMobile ? "1px" : "2px",
           border: "1px solid #e0e0e0",
-          borderRadius: "8px",
-          height: "calc(100% - 60px)",
+          borderRadius: isMobile ? "6px" : "8px",
+          height: isMobile ? "auto" : "calc(100% - 60px)",
           overflow: "hidden",
         }}
+        onTouchMove={isMobile ? handleTouchMove : null}
+        onTouchEnd={isMobile ? handleTouchEnd : null}
       >
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((header) => (
           <div
@@ -208,13 +286,13 @@ const Calendar = ({
               fontWeight: "600",
               color: darkTheme ? "#bbb" : "#444",
               textAlign: "center",
-              padding: "10px",
-              fontSize: "14px",
+              padding: isMobile ? "6px 2px" : "10px",
+              fontSize: isMobile ? "10px" : "14px",
               borderBottom: "1px solid #ddd",
               textTransform: "uppercase",
             }}
           >
-            {header}
+            {isMobile ? header.slice(0, 1) : header}
           </div>
         ))}
 
@@ -224,76 +302,84 @@ const Calendar = ({
           return (
             <div
               key={index}
-              onClick={
-                dayInfo && !dayInfo.isPast
-                  ? () => handleClick(dayInfo.dateStr, dayInfo.isPast)
-                  : null
-              }
-              onMouseEnter={
-                dayInfo && !dayInfo.isPast
-                  ? () =>
-                      handleMouseEnter(
-                        dayInfo.dateStr,
-                        dayInfo.isPast,
-                        dayInfo.day
-                      )
-                  : null
-              }
+              data-datestr={dayInfo?.dateStr}
+              data-ispast={dayInfo?.isPast}
+              data-daynum={dayInfo?.day}
               style={{
-                minHeight: "60px",
-                padding: "8px",
+                minHeight: isMobile ? "45px" : "60px",
+                padding: isMobile ? "4px" : "8px",
                 borderRadius: "0",
                 cursor:
-                  dayInfo && isSelectionMode && !dayInfo.isPast
-                    ? "pointer"
-                    : "not-allowed",
+                  dayInfo && mode === "attendance" ? "pointer" : "default",
                 transition: "background 0.2s ease",
                 display: "flex",
                 flexDirection: "column",
-                justifyContent: "space-between", // Distribute space between day and label
-                alignItems: "flex-start", // Align items to the left
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                position: "relative",
+                touchAction: isMobile && dayInfo ? "none" : "auto",
                 ...cellStyle,
+              }}
+              onMouseEnter={(e) => {
+                const tooltip = e.currentTarget.querySelector(".tooltip");
+                if (tooltip) tooltip.style.opacity = 1;
+              }}
+              onMouseLeave={(e) => {
+                const tooltip = e.currentTarget.querySelector(".tooltip");
+                if (tooltip) tooltip.style.opacity = 0;
               }}
             >
               {dayInfo && (
                 <>
                   <div
                     style={{
-                      fontSize: "16px",
+                      fontSize: isMobile ? "12px" : "16px",
                       fontWeight: "500",
-                      marginBottom: "4px",
+                      marginBottom: isMobile ? "2px" : "4px",
                       color: cellStyle.color,
                     }}
                   >
                     {dayInfo.day}
                   </div>
+
                   {mode === "attendance" && dayInfo.event && (
-                    <div
-                      style={{
-                        fontSize: "11px",
-                        padding: "2px 4px",
-                        borderRadius: "4px",
-                        color: cellStyle.color,
-                        textAlign: "left",
-                        width: "100%", // Ensure it takes full width for left alignment
-                      }}
-                    >
-                      {dayInfo.event.label}
-                    </div>
-                  )}
-                  {mode === "leave" && dayInfo.event && (
-                    <div
-                      style={{
-                        fontSize: "11px",
-                        padding: "2px 6px",
-                        borderRadius: "4px",
-                        background: "rgba(255, 255, 255, 0.7)",
-                        color: "#333",
-                        textAlign: "center",
-                      }}
-                    >
-                      {dayInfo.event.label}
-                    </div>
+                    <>
+                      <div
+                        style={{
+                          fontSize: isMobile ? "9px" : "11px",
+                          padding: isMobile ? "1px 2px" : "2px 4px",
+                          borderRadius: "4px",
+                          color: cellStyle.color,
+                          textAlign: "left",
+                          width: "100%",
+                        }}
+                      >
+                        {dayInfo.event.label}
+                      </div>
+
+                      {/* Tooltip */}
+                      <div
+                        className="tooltip"
+                        style={{
+                          position: "absolute",
+                          background: "#333",
+                          color: "#fff",
+                          padding: "6px 8px",
+                          borderRadius: "6px",
+                          fontSize: "12px",
+                          whiteSpace: "nowrap",
+                          zIndex: 10,
+                          bottom: "100%",
+                          left: "50%",
+                          transform: "translateX(-50%) translateY(-5px)",
+                          opacity: 0,
+                          pointerEvents: "none",
+                          transition: "opacity 0.2s ease",
+                        }}
+                      >
+                        {`Date: ${dayInfo.dateStr} | Status: ${dayInfo.event.type} | Hours: ${dayInfo.event.label}`}
+                      </div>
+                    </>
                   )}
                 </>
               )}
