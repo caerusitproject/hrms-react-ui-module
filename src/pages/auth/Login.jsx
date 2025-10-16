@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { loginStart, loginSuccess } from "../../store/slices/authSlice";
 import { useAuth } from "../../hooks/useAuth";
+import { storeAuthData } from "./authStorage";
 import { theme } from "../../theme/theme";
 import { COMPANY_INFO } from "../../utils/constants";
 import CompanyLogo from "../../assets/caerus-logo.png";
@@ -15,6 +16,7 @@ const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
+
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 768);
@@ -31,28 +33,15 @@ const Login = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+ const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    //dispatch(loginStart());
-    const success = await login(email, password);
+  const success = await login(email, password);
 
-    if (success) {
-      let role = "EMPLOYEE";
-      if (email.endsWith("@admin.com")) role = "ADMIN";
-      else if (email.endsWith("@hr.com")) role = "HR";
-      else if (email.endsWith("@team.com")) role = "TEAM MANAGER";
-
-      const userData = {
-        email,
-        name: email.split("@")[0],
-        role,
-        loginTime: new Date().toISOString(),
-      };
-
-      // dispatch(loginSuccess({ user: userData, token: null }));
-    }
-  };
+  if (success) {
+    navigate("/home", { replace: true });
+  }
+};
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter") {
@@ -67,17 +56,16 @@ const Login = () => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: `linear-gradient(135deg, ${theme.colors.gray} 0%, ${theme.colors.background} 100%)`, // Gradient background
+        background: `linear-gradient(135deg, ${theme.colors.gray} 0%, ${theme.colors.background} 100%)`,
         padding: isMobile ? "10px" : "20px",
         overflow: "auto",
       }}
     >
-      {/* Card Container */}
       <div
         className="fade-in"
         style={{
           backgroundColor: theme.colors.white,
-          padding: isMobile ? "15px" : "30px", // Reduced padding to decrease height
+          padding: isMobile ? "15px" : "30px",
           borderRadius: theme.borderRadius.large,
           boxShadow: theme.shadows.large,
           width: isMobile ? "90%" : "400px",
@@ -93,11 +81,11 @@ const Login = () => {
           e.currentTarget.style.boxShadow = theme.shadows.large;
         }}
       >
-        {/* Header (unchanged, included for context) */}
+        {/* Header */}
         <div
           style={{
             textAlign: "center",
-            marginBottom: isMobile ? "15px" : "20px", // Reduced margin to decrease height
+            marginBottom: isMobile ? "15px" : "20px",
           }}
         >
           <img
@@ -135,12 +123,12 @@ const Login = () => {
           </p>
         </div>
 
-        {/* Login Form (only password input modified) */}
+        {/* Login Form */}
         <div>
-          {/* Email input (unchanged, included for context) */}
+          {/* Email input */}
           <div
             style={{
-              marginBottom: isMobile ? "10px" : "15px", // Reduced margin to decrease height
+              marginBottom: isMobile ? "10px" : "15px",
             }}
           >
             <label
@@ -169,11 +157,6 @@ const Login = () => {
                 padding: isMobile ? "10px" : "12px",
                 borderRadius: theme.borderRadius.small,
                 border: `1px solid ${theme.colors.lightGray}`,
-                "::placeholder": {
-                  fontSize: isMobile ? "8px" : "9px",
-                  color: theme.colors.text.secondary,
-                  opacity: 0.7,
-                },
                 fontSize: isMobile ? "14px" : "16px",
                 transition: "border-color 0.3s ease",
               }}
@@ -189,7 +172,7 @@ const Login = () => {
           {/* Password Input */}
           <div
             style={{
-              marginBottom: isMobile ? "10px" : "15px", // Reduced margin to decrease height
+              marginBottom: isMobile ? "10px" : "15px",
             }}
           >
             <label
@@ -218,11 +201,6 @@ const Login = () => {
                 padding: isMobile ? "10px" : "12px",
                 borderRadius: theme.borderRadius.small,
                 border: `1px solid ${theme.colors.lightGray}`,
-                "::placeholder": {
-                  fontSize: isMobile ? "8px" : "9px", // Match email placeholder size
-                  color: theme.colors.text.secondary,
-                  opacity: 0.7,
-                },
                 fontSize: isMobile ? "14px" : "16px",
                 transition: "border-color 0.3s ease",
               }}
@@ -239,7 +217,7 @@ const Login = () => {
             <div
               style={{
                 color: theme.colors.error,
-                marginBottom: isMobile ? "10px" : "15px", // Reduced margin
+                marginBottom: isMobile ? "10px" : "15px",
                 fontSize: isMobile ? "12px" : "14px",
                 padding: "10px",
                 backgroundColor: `${theme.colors.error}10`,
@@ -284,11 +262,11 @@ const Login = () => {
         {/* Demo Info */}
         <div
           style={{
-            marginTop: isMobile ? "15px" : "20px", // Reduced margin
-            padding: isMobile ? "8px" : "12px", // Reduced padding
+            marginTop: isMobile ? "15px" : "20px",
+            padding: isMobile ? "8px" : "12px",
             backgroundColor: theme.colors.background,
             borderRadius: theme.borderRadius.small,
-            fontSize: isMobile ? "10px" : "12px", // Reduced font size
+            fontSize: isMobile ? "10px" : "12px",
             color: theme.colors.text.secondary,
             textAlign: "center",
             letterSpacing: "0.2px",

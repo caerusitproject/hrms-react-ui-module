@@ -129,9 +129,9 @@ const SideNav = ({ collapsed, onToggle }) => {
                 src={CompanyLogo}
                 alt="Company Logo"
                 style={{
-                  height: isMobile ? "40px" : "48px",
-                  width: isMobile ? "240px" : "180px",
-                  maxWidth: "100%",
+                   height: isMobile ? "62px" : "75px", // increased height
+            width: isMobile ? "auto" : "auto", // keeps aspect ratio
+            maxWidth: "200px", // ensures it doesn’t stretch too much
                   objectFit: "contain",
                   position: "relative",
                   zIndex: 1,

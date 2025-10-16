@@ -1,62 +1,78 @@
 // menuItems.js
-import React from 'react';
-import HomeIcon from '@mui/icons-material/Home';
-import PersonIcon from '@mui/icons-material/Person';
-import InfoIcon from '@mui/icons-material/Info';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import EventAvailableIcon from '@mui/icons-material/EventAvailable'; // Attendance
-import BeachAccessIcon from '@mui/icons-material/BeachAccess'; // Leave management
-import CampaignIcon from '@mui/icons-material/Campaign'; // Broadcast
-
+import React from "react";
+import HomeIcon from "@mui/icons-material/Home";
+import PersonIcon from "@mui/icons-material/Person";
+import InfoIcon from "@mui/icons-material/Info";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import EventAvailableIcon from "@mui/icons-material/EventAvailable"; // Attendance
+import BeachAccessIcon from "@mui/icons-material/BeachAccess"; // Leave management
+import CampaignIcon from "@mui/icons-material/Campaign"; // Broadcast
+import ConfigIcon from "@mui/icons-material/Settings"; // Admin Config
+import GroupIcon from "@mui/icons-material/Group";
+ const user = JSON.parse(localStorage.getItem("user"));
+  const userId = user?.id || 1; // fallback to 1 if not found
 export const menuItems = [
   {
     path: "/home",
     label: "Home",
     icon: HomeIcon,
     key: "home",
-    requiredRoles: ["EMPLOYEE", "TEAM MANAGER", "HR", "ADMIN"],
+    requiredRoles: ["USER", "MANAGER", "HR", "ADMIN"],
   },
   {
-    path: "/employee-profile",
+    path: `/employee-profile/${userId}`,
     label: "Profile",
     icon: PersonIcon,
     key: "profile",
-    requiredRoles: ["EMPLOYEE", "TEAM MANAGER", "HR", "ADMIN"],
-  },
-  
-  {
-    path: "/attendance",
-    label: "Attendance",
-    icon: EventAvailableIcon,
-    key: "attendance",
-    requiredRoles: ["EMPLOYEE", "TEAM MANAGER", "HR", "ADMIN"],
-  },
-  {
-    path: "/leave-management",
-    label: "Leave Management",
-    icon: BeachAccessIcon,
-    key: "leave-management",
-    requiredRoles: ["EMPLOYEE", "TEAM MANAGER", "HR", "ADMIN"],
+    requiredRoles: ["USER", "MANAGER", "HR", "ADMIN"],
   },
   {
     path: "/dashboard",
     label: "Dashboard",
     icon: DashboardIcon,
     key: "dashboard",
-    requiredRoles: ["TEAM MANAGER", "HR", "ADMIN"],
+    requiredRoles: ["MANAGER", "HR", "ADMIN"],
+  },
+  {
+    path: "/attendance",
+    label: "Attendance",
+    icon: EventAvailableIcon,
+    key: "attendance",
+    requiredRoles: ["USER", "MANAGER", "HR", "ADMIN"],
+  },
+  {
+    path: "/leave-management",
+    label: "Leave Management",
+    icon: BeachAccessIcon,
+    key: "leave-management",
+    requiredRoles: ["USER", "MANAGER", "HR", "ADMIN"],
+  },
+  {
+    path: "/employees-list",
+    label: "Employee List",
+    icon: GroupIcon,
+    key: "employee-list",
+    requiredRoles: ["HR", "ADMIN"],
   },
   {
     path: "/broadcast",
     label: "Broadcast",
     icon: CampaignIcon,
     key: "broadcast",
-    requiredRoles: ["EMPLOYEE", "TEAM MANAGER", "HR", "ADMIN"],
+    requiredRoles: ["USER", "MANAGER", "HR", "ADMIN"],
+  },
+  {
+    path: "/admin-config",
+    label: "Admin Config",
+    icon: ConfigIcon,
+    key: "admin-config",
+    requiredRoles: ["ADMIN"],
   },
   {
     path: "/about",
     label: "About",
     icon: InfoIcon,
     key: "about",
-    requiredRoles: ["EMPLOYEE", "TEAM MANAGER", "HR", "ADMIN"],
+    requiredRoles: ["USER", "MANAGER", "HR", "ADMIN"],
   },
 ];

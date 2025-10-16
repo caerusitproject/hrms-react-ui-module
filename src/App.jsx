@@ -1,3 +1,4 @@
+import { useTokenRefresh } from '../src/hooks/useTokenRefresh';
 import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import ReduxProvider from './components/ReduxProvider';
@@ -6,6 +7,7 @@ import AppRoutes from './components/AppRoutes';
 import './App.css';
 
 const App = () => {
+  
   return (
     <ReduxProvider>
       <BrowserRouter basename="/app">

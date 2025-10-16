@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import { theme } from "../../theme/theme"; // Adjust path based on your project structure
+// Import Material UI icons for password toggle (ensure @mui/icons-material is installed)
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
 const Input = ({ 
   label, 
@@ -9,58 +12,136 @@ const Input = ({
   required = false, 
   errors, 
   disabled = false,
-  labelColor = "#333333",
-  inputColor = "#222",
-  defaultBorderColor = theme.colors.lightGray,
+  options = [], // For select type: [{value: '', label: 'Select...'}]
+  showPassword = false, // For password type: external state
+  onTogglePassword, // For password type: toggle handler
+  labelColor = theme.colors.text.secondary,
+  inputColor = theme.colors.text.primary,
+  defaultBorderColor = theme.colors.mediumGray,
   activeBorderColor = theme.colors.primary,
-  errorBorderColor = theme.colors.error, // Added for error state
+  errorBorderColor = theme.colors.error,
   backgroundColor = "#ffffff",
-  borderWidth = "0.5px", // Default, will override to 1px for errors
+  borderWidth = "0.8px",
+  activeBorderWidth = "2px",
   className = "",
   ...rest
 }) => {
   const [isFocused, setIsFocused] = useState(false);
-  const error = errors?.[name.split('.')[0]]?.[name.split('.')[1]];
+  const error = errors?.[name.split('.')[0]]?.[name.split('.')[1]] || errors?.[name];
+
+  const commonInputStyle = {
+    width: "100%",
+    padding: theme.spacing.sm,
+    border: error
+  ? `${activeBorderWidth} solid ${errorBorderColor}`
+  : `${isFocused ? activeBorderWidth : borderWidth} solid ${isFocused ? activeBorderColor : defaultBorderColor}`,
+    outline: "none",
+    borderRadius: theme.borderRadius.small,
+    fontSize: "16px",
+    color: disabled ? theme.colors.text.secondary : inputColor,
+    backgroundColor: disabled ? "#fff" : backgroundColor, // Consistent white bg for disabled
+    boxSizing: "border-box",
+    transition: "border-color 0.2s ease",
+    cursor: disabled ? "not-allowed" : "text",
+    opacity: disabled ? 0.7 : 1, // Subtle disabled look
+  };
+
+  const handleFocus = () => !disabled && setIsFocused(true);
+  const handleBlur = () => setIsFocused(false);
+
+  const renderInput = () => {
+    switch (type) {
+      case "select":
+        return (
+          <select
+            {...register(name, { required: required ? `${label} is required` : false })}
+            disabled={disabled}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            style={{
+              ...commonInputStyle,
+              paddingRight: theme.spacing.sm, // Consistent padding
+            }}
+            {...rest}
+          >
+            {options.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        );
+      case "password":
+        return (
+          <div style={{ position: "relative" }}>
+            <input
+              {...register(name, { required: required ? `${label} is required` : false })}
+              type={showPassword ? "text" : "password"}
+              disabled={disabled}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
+              style={{
+                ...commonInputStyle,
+                paddingRight: "40px", // Space for eye icon
+              }}
+              {...rest}
+            />
+            <button
+              type="button"
+              onClick={onTogglePassword}
+              disabled={disabled}
+              style={{
+                position: "absolute",
+                right: "10px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "none",
+                border: "none",
+                cursor: disabled ? "not-allowed" : "pointer",
+                color: disabled ? theme.colors.text.secondary : theme.colors.text.primary,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+            </button>
+          </div>
+        );
+      default: // text, email, date, etc.
+        return (
+          <input
+            type={type}
+            {...register(name, { required: required ? `${label} is required` : false })}
+            disabled={disabled}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            style={commonInputStyle}
+            {...rest}
+          />
+        );
+    }
+  };
 
   return (
-    <div style={{ marginBottom: theme.spacing.md, maxWidth: "500px" }} className={className}>
+    <div style={{ marginBottom: theme.spacing.md, maxWidth: "100%" }} className={className}>
       {label && (
         <label
           style={{
             display: "block",
             fontSize: "14px",
             fontWeight: "500",
-            color: labelColor,
+            color: disabled ? theme.colors.text.secondary : labelColor,
             marginBottom: theme.spacing.xs,
           }}
         >
           {label} {required && <span style={{ color: theme.colors.error }}>*</span>}
         </label>
       )}
-      <input
-        type={type}
-        {...register(name, { required: required ? `${label} is required` : false })}
-        disabled={disabled}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
-        style={{
-          width: "100%",
-          padding: theme.spacing.sm,
-          border: error 
-            ? `1px solid ${errorBorderColor}` // 1px red border for errors
-            : `${borderWidth} solid ${isFocused ? activeBorderColor : defaultBorderColor}`,
-          outline: "none",
-          borderRadius: theme.borderRadius.small,
-          fontSize: "16px",
-          color: inputColor,
-          backgroundColor,
-          boxSizing: "border-box",
-        }}
-        {...rest}
-      />
+      {renderInput()}
       {error && (
         <p style={{ color: theme.colors.error, fontSize: "12px", marginTop: theme.spacing.xs }}>
-          {error.message}
+          {error.message || error}
         </p>
       )}
     </div>

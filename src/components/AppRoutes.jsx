@@ -2,12 +2,14 @@
 import React, { Suspense, lazy } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Outlet } from "react-router-dom";
+import {useTokenRefresh} from "../hooks/useTokenRefresh";
 import { useAuth } from "../hooks/useAuth";
 import CustomLoader from "../components/common/CustomLoader";
 import EmployeeProfile from "../pages/profile/EmployeeProfile";
 import ManageOrganization from "../pages/admin/ManageOrganization";
 import EmployeeProfileEdit from "../pages/profile/EmployeeProfileEdit";
 import EmployeeProfileView from "../pages/profile/EmployeeProfileView";
+import EmployeeList from "../pages/profile/EmployeeList";
 // Lazy load components
 const Login = lazy(() => import("../pages/auth/Login"));
 const MainLayout = lazy(() => import("./layout/MainLayout"));
@@ -22,10 +24,11 @@ const Attendance = lazy(() => import("../pages/leave-management/Attendance"));
 const Leave = lazy(() => import("../pages/leave-management/Leave"));
 const Broadcast = lazy(() => import("../pages/broadcast/Broadcast"));
 const AppRoutes = () => {
-  const { isAuthenticated } = useAuth();
-
+ const { isAuthenticated } = useAuth();
+  useTokenRefresh();
   return (
     <div className="app">
+      
       <Suspense fallback={<CustomLoader />}>
         <Routes>
           {/* Root redirect to login */}
@@ -67,9 +70,9 @@ const AppRoutes = () => {
             <Route
               path="employee"
               element={
-                <ProtectedRoute requiredRoles={["HR", "ADMIN"]}>
+                <ProtectedRoute requiredRoles={["ADMIN", "HR", "MANAGER"]}>
                   <Suspense fallback={<CustomLoader />}>
-                    <Outlet /> 
+                    <Outlet />
                   </Suspense>
                 </ProtectedRoute>
               }
@@ -78,7 +81,7 @@ const AppRoutes = () => {
               <Route path="edit/:id" element={<EmployeeProfileEdit />} />
             </Route>
             <Route
-              path="employee-profile"
+              path="employee-profile/:id"
               element={
                 <Suspense fallback={<CustomLoader />}>
                   <EmployeeProfileView />
@@ -86,10 +89,10 @@ const AppRoutes = () => {
               }
             />
             <Route
-              path="manage-organization"
+              path="dashboard"
               element={
                 <Suspense fallback={<CustomLoader />}>
-                  <ManageOrganization />
+                  <Dashboard />
                 </Suspense>
               }
             />
@@ -110,25 +113,35 @@ const AppRoutes = () => {
               }
             />
             <Route
-              path="dashboard"
+              path="admin-config"
               element={
-                <ProtectedRoute requiredRoles={["TEAM MANAGER", "HR", "ADMIN"]}>
+                <ProtectedRoute requiredRoles={["ADMIN"]}>
                   <Suspense fallback={<CustomLoader />}>
-                    <Dashboard />
+                    <ManageOrganization />
                   </Suspense>
                 </ProtectedRoute>
               }
             />
             <Route
-          path="broadcast"
-          element={
-            <Suspense fallback={<CustomLoader />}>
-              <Broadcast/>
-            </Suspense>
-          }
-        />
+              path="employees-list"
+              element={
+                <ProtectedRoute requiredRoles={["ADMIN", "HR", "MANAGER"]}>
+                  <Suspense fallback={<CustomLoader />}>
+                    <EmployeeList />
+                  </Suspense>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="broadcast"
+              element={
+                <Suspense fallback={<CustomLoader />}>
+                  <Broadcast />
+                </Suspense>
+              }
+            />
           </Route>
-          
 
           {/* Catch-all route for invalid paths */}
           <Route

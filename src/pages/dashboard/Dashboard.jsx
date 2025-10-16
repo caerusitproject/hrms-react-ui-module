@@ -1,486 +1,439 @@
 // src/pages/dashboard/Dashboard.jsx
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../hooks/useAuth';
-import { theme } from '../../theme/theme';
-
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../../hooks/useAuth";
+import CompanyLogo from "../../assets/caerus-logo.png";
+import { useNavigate } from "react-router-dom";
+import {
+  Box,
+  Typography,
+  Card,
+  CardContent,
+  Grid,
+  Avatar,
+  Container,
+  useTheme,
+  useMediaQuery,
+} from "@mui/material";
+import { EmployeeAPI } from "../../api/employeeApi";
+import { DashboardAPI } from "../../api/dashboardApi";
+import { theme } from "../../theme/theme";
+import Button from "../../components/common/Button";
+import CustomLoader from "../../components/common/CustomLoader";
 const Dashboard = () => {
   const { user } = useAuth();
-  const [selectedPeriod, setSelectedPeriod] = useState('thisMonth');
-  const [attendanceData, setAttendanceData] = useState([]);
+  const navigate = useNavigate();
+
+  // Team Activity Feed Data - now dynamic for HR/MANAGER/ADMIN
+  const [teamFeed, setTeamFeed] = useState([]);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const role = user?.role || "USER"; // default to USER if undefined
+  
 
   useEffect(() => {
-    // Simulate loading attendance data
-    const generateAttendanceData = () => {
-      const days = [];
-      const today = new Date();
-      for (let i = 29; i >= 0; i--) {
-        const date = new Date(today);
-        date.setDate(today.getDate() - i);
-        days.push({
-          date: date.toISOString().split('T')[0],
-          day: date.getDate(),
-          status: Math.random() > 0.1 ? 'present' : Math.random() > 0.5 ? 'late' : 'absent',
-          hours: Math.random() > 0.1 ? (7 + Math.random() * 2).toFixed(1) : '0'
-        });
+    const fetchDashboardData = async () => {
+      if (!role) return;
+      setLoading(true);
+      try {
+        const data = await DashboardAPI.getDashboardData(role);
+        setDashboardData(data);
+
+        // Set teamFeed based on role
+        if (role === "MANAGER") {
+          setTeamFeed(
+            data.teamMembers.map((emp) => ({
+              id: emp.id,
+              name: emp.name,
+              email: emp.email,
+              avatar: emp.name.charAt(0).toUpperCase(),
+            }))
+          );
+        } else if (role === "HR" || role === "ADMIN") {
+          setTeamFeed(
+            data.allEmployeesDetails.map((emp) => ({
+              id: emp.id,
+              name: emp.name,
+              email: emp.email,
+              avatar: emp.name.charAt(0).toUpperCase(),
+            }))
+          );
+        }
+      } catch (err) {
+        console.error("Error fetching dashboard data:", err);
+      } finally {
+        setLoading(false);
       }
-      return days;
     };
 
-    setAttendanceData(generateAttendanceData());
-  }, [selectedPeriod]);
+    fetchDashboardData();
+  }, [role, user?.id]);
 
-  const leaveBalances = [
-    {
-      type: 'Annual Leave',
-      used: 12,
-      total: 30,
+  if (loading) {
+    return (
+      <div style={{ textAlign: "center", padding: theme.spacing.xl }}>
+        <CustomLoader />
+      </div>
+    );
+  }
+
+  // Quick Overview Data - dynamic
+  let quickOverview = [];
+
+  if (role === "USER" && dashboardData) {
+    quickOverview = [
+      { label: "Pending Leave Requests", value: dashboardData.pendingLeaveCount.toString(), color: theme.colors.warning },
+      { label: "Attendance This Month", value: "20", color: theme.colors.success },
+    ];
+  } else if (role === "MANAGER" && dashboardData) {
+    quickOverview = [
+      { label: "Active Team Members", value: dashboardData.totalTeamMembers.toString(), color: theme.colors.success },
+      { label: "Pending Approvals", value: dashboardData.pendingLeaves.length.toString(), color: theme.colors.warning },
+      { label: "Attendance This Month", value: "20", color: theme.colors.success },
+      { label: "Pending Leave Requests", value: "2", color: theme.colors.warning },
+    ];
+  } else if ((role === "HR" || role === "ADMIN") && dashboardData) {
+    quickOverview = [
+      { label: "Total Employees", value: dashboardData.totalEmployees.toString(), color: theme.colors.primary },
+      { label: "Documents Shared", value: "35", color: theme.colors.primaryLight },
+      { label: "Attendance This Month", value: "20", color: theme.colors.success },
+      { label: "Pending Leave Requests", value: "2", color: theme.colors.warning },
+    ];
+  }
+  // Upcoming Events Data - from broadcasts
+  const upcomingEvents = dashboardData ? 
+    (dashboardData.recentBroadcast || dashboardData.upcomingBroadcasts || []).map((b) => ({
+      id: b.id,
+      title: b.title,
+      date: new Date(b.createdAt).toDateString(),
       color: theme.colors.primary,
-      icon: '🏖️'
-    },
-    {
-      type: 'Sick Leave',
-      used: 3,
-      total: 12,
-      color: theme.colors.error,
-      icon: '🏥'
-    },
-    {
-      type: 'Personal Leave',
-      used: 5,
-      total: 15,
-      color: theme.colors.success,
-      icon: '👤'
-    },
-    {
-      type: 'Emergency Leave',
-      used: 1,
-      total: 5,
-      color: theme.colors.warning,
-      icon: '🚨'
-    }
-  ];
-
-  const performanceMetrics = [
-    {
-      label: 'Attendance Rate',
-      value: '96.5%',
-      change: '+2.1%',
-      trend: 'up',
-      color: theme.colors.success
-    },
-    {
-      label: 'On-time Rate',
-      value: '89.2%',
-      change: '-1.3%',
-      trend: 'down',
-      color: theme.colors.warning
-    },
-    {
-      label: 'Overtime Hours',
-      value: '24.5h',
-      change: '+5.2h',
-      trend: 'up',
-      color: theme.colors.primary
-    },
-    {
-      label: 'Tasks Completed',
-      value: '87',
-      change: '+12',
-      trend: 'up',
-      color: theme.colors.success
-    }
-  ];
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'present': return theme.colors.success;
-      case 'late': return theme.colors.warning;
-      case 'absent': return theme.colors.error;
-      default: return theme.colors.lightGray;
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'present': return '✅';
-      case 'late': return '⏰';
-      case 'absent': return '❌';
-      default: return '⭕';
-    }
-  };
+    })) : [];
 
   return (
-    <div >
+    <div>
       {/* Header */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: theme.spacing.xl,
-        flexWrap: 'wrap',
-        gap: theme.spacing.md
-      }}>
-        <div>
-          <h1 style={{
-            color: theme.colors.text.primary,
-            margin: 0,
-            fontSize: '32px',
-            fontWeight: '700'
-          }}>
-            📊 Analytics Dashboard
-          </h1>
-          <p style={{
-            color: theme.colors.text.secondary,
-            margin: '8px 0 0 0',
-            fontSize: '16px'
-          }}>
-            Track your performance and attendance insights
-          </p>
-        </div>
 
-        <select
-          value={selectedPeriod}
-          onChange={(e) => setSelectedPeriod(e.target.value)}
-          style={{
-            padding: '12px 16px',
-            borderRadius: theme.borderRadius.small,
-            border: `1px solid ${theme.colors.lightGray}`,
-            backgroundColor: theme.colors.white,
-            fontSize: '14px',
-            cursor: 'pointer'
-          }}
-        >
-          <option value="thisWeek">This Week</option>
-          <option value="thisMonth">This Month</option>
-          <option value="lastMonth">Last Month</option>
-          <option value="thisYear">This Year</option>
-        </select>
-      </div>
-
-      {/* Performance Metrics */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: theme.spacing.lg,
-        marginBottom: theme.spacing.xl
-      }}>
-        {performanceMetrics.map((metric, index) => (
-          <div
-            key={index}
-            className="card"
-            style={{
-              padding: theme.spacing.lg,
-              textAlign: 'center',
-              transition: theme.transitions.medium
-            }}
-            onMouseOver={(e) => {
-              e.target.style.transform = 'translateY(-2px)';
-              e.target.style.boxShadow = theme.shadows.medium;
-            }}
-            onMouseOut={(e) => {
-              e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = theme.shadows.small;
-            }}
-          >
-            <div style={{
-              color: metric.color,
-              fontSize: '28px',
-              fontWeight: 'bold',
-              marginBottom: theme.spacing.xs
-            }}>
-              {metric.value}
-            </div>
-            <div style={{
-              color: theme.colors.text.primary,
-              fontSize: '14px',
-              fontWeight: '600',
-              marginBottom: theme.spacing.xs
-            }}>
-              {metric.label}
-            </div>
-            <div style={{
-              color: metric.trend === 'up' ? theme.colors.success : theme.colors.error,
-              fontSize: '12px',
-              fontWeight: '500'
-            }}>
-              {metric.trend === 'up' ? '↗️' : '↘️'} {metric.change}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Main Content Grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
-        gap: theme.spacing.lg,
-        marginBottom: theme.spacing.xl
-      }}>
-        {/* Attendance Calendar */}
-        <div className="card" style={{
-          padding: theme.spacing.xl
-        }}>
-          <h3 style={{
-            color: theme.colors.text.primary,
-            marginBottom: theme.spacing.lg,
-            fontSize: '20px',
-            fontWeight: '600'
-          }}>
-            📅 Attendance Overview
-          </h3>
-
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(7, 1fr)',
-            gap: '4px',
-            marginBottom: theme.spacing.md
-          }}>
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
-              <div
-                key={index}
-                style={{
-                  textAlign: 'center',
-                  padding: '8px 4px',
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                  color: theme.colors.text.secondary
-                }}
-              >
-                {day}
-              </div>
-            ))}
-          </div>
-
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(7, 1fr)',
-            gap: '4px'
-          }}>
-            {attendanceData.slice(-21).map((day, index) => (
-              <div
-                key={index}
-                style={{
-                  aspectRatio: '1',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: `${getStatusColor(day.status)}20`,
-                  border: `2px solid ${getStatusColor(day.status)}`,
-                  borderRadius: theme.borderRadius.small,
-                  fontSize: '10px',
-                  cursor: 'pointer',
-                  transition: theme.transitions.fast
-                }}
-                title={`${day.date} - ${day.status} - ${day.hours}h`}
-                onMouseOver={(e) => {
-                  e.target.style.transform = 'scale(1.1)';
-                }}
-                onMouseOut={(e) => {
-                  e.target.style.transform = 'scale(1)';
-                }}
-              >
-                <div style={{ fontSize: '8px', fontWeight: 'bold' }}>
-                  {day.day}
-                </div>
-                <div>
-                  {getStatusIcon(day.status)}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div style={{
+      {/* Quick Actions */}
+      {/* <Box sx={{ textAlign: 'center', mb: 4 }}>
+        <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
+          Quick Actions
+        </Typography>
+        <Box
+          sx={{
             display: 'flex',
             justifyContent: 'center',
-            gap: theme.spacing.md,
-            marginTop: theme.spacing.md,
-            fontSize: '12px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <div style={{
-                width: '12px',
-                height: '12px',
-                backgroundColor: theme.colors.success,
-                borderRadius: '2px'
-              }} />
-              Present
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <div style={{
-                width: '12px',
-                height: '12px',
-                backgroundColor: theme.colors.warning,
-                borderRadius: '2px'
-              }} />
-              Late
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <div style={{
-                width: '12px',
-                height: '12px',
-                backgroundColor: theme.colors.error,
-                borderRadius: '2px'
-              }} />
-              Absent
-            </div>
-          </div>
-        </div>
+            gap: 2,
+            flexWrap: 'wrap'
+          }}
+        >
+          <Button
+            variant="contained"
+            onClick={() => navigate('/dashboard')}
+            sx={{
+              px: 3,
+              py: 1.5,
+              fontWeight: 600,
+              textTransform: 'none',
+              fontSize: { xs: '14px', md: '16px' }
+            }}
+          >
+            Go to Dashboard
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => navigate('/employee-profile/' + user?.id)}
+            sx={{
+              px: 3,
+              py: 1.5,
+              fontWeight: 600,
+              textTransform: 'none',
+              fontSize: { xs: '14px', md: '16px' }
+            }}
+          >
+            View Profile
+          </Button>
+        </Box>
+      </Box> */}
 
-        {/* Leave Balances */}
-        <div className="card" style={{
-          padding: theme.spacing.xl
-        }}>
-          <h3 style={{
-            color: theme.colors.text.primary,
-            marginBottom: theme.spacing.lg,
-            fontSize: '20px',
-            fontWeight: '600'
-          }}>
-            🏖️ Leave Balance
-          </h3>
-
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: theme.spacing.lg
-          }}>
-            {leaveBalances.map((leave, index) => {
-              const percentage = (leave.used / leave.total) * 100;
-              const remaining = leave.total - leave.used;
-
-              return (
-                <div key={index}>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: theme.spacing.xs
-                  }}>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: theme.spacing.sm
-                    }}>
-                      <span style={{ fontSize: '16px' }}>{leave.icon}</span>
-                      <span style={{
-                        color: theme.colors.text.primary,
-                        fontSize: '14px',
-                        fontWeight: '500'
-                      }}>
-                        {leave.type}
-                      </span>
-                    </div>
-                    <span style={{
-                      color: leave.color,
-                      fontSize: '14px',
-                      fontWeight: 'bold'
-                    }}>
-                      {remaining} days left
-                    </span>
-                  </div>
-
-                  <div style={{
-                    height: '8px',
-                    backgroundColor: theme.colors.lightGray,
-                    borderRadius: '4px',
-                    overflow: 'hidden'
-                  }}>
-                    <div style={{
-                      width: `${percentage}%`,
-                      height: '100%',
-                      backgroundColor: leave.color,
-                      transition: theme.transitions.medium
-                    }} />
-                  </div>
-
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    marginTop: '4px',
-                    fontSize: '12px',
-                    color: theme.colors.text.secondary
-                  }}>
-                    <span>Used: {leave.used}</span>
-                    <span>Total: {leave.total}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Activity */}
-      <div className="card" style={{
-        padding: theme.spacing.xl
-      }}>
-        <h3 style={{
+      {/* Main Dashboard Content */}
+      <h1
+        style={{
+          fontSize: window.innerWidth < 640 ? "24px" : "32px",
+          fontWeight: 700,
           color: theme.colors.text.primary,
-          marginBottom: theme.spacing.lg,
-          fontSize: '20px',
-          fontWeight: '600'
-        }}>
-          📋 Recent Activity
-        </h3>
+          margin: 0,
+          flex: 1, // allows heading to shrink if needed
+        }}
+      >
+        Dashboard
+      </h1>
 
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-          gap: theme.spacing.md
-        }}>
-          {[
-            { action: 'Checked in', time: '9:15 AM', date: 'Today', icon: '🟢' },
-            { action: 'Submitted timesheet', time: '6:30 PM', date: 'Yesterday', icon: '📝' },
-            { action: 'Leave request approved', time: '2:45 PM', date: '2 days ago', icon: '✅' },
-            { action: 'Updated profile', time: '11:20 AM', date: '3 days ago', icon: '👤' },
-            { action: 'Completed training', time: '4:15 PM', date: '1 week ago', icon: '🎓' },
-            { action: 'Joined team meeting', time: '10:00 AM', date: '1 week ago', icon: '👥' }
-          ].map((activity, index) => (
-            <div
-              key={index}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: theme.spacing.md,
-                backgroundColor: theme.colors.background,
-                borderRadius: theme.borderRadius.small,
-                border: `1px solid ${theme.colors.lightGray}`,
-                transition: theme.transitions.fast
-              }}
-              onMouseOver={(e) => {
-                e.target.style.backgroundColor = theme.colors.gray;
-              }}
-              onMouseOut={(e) => {
-                e.target.style.backgroundColor = theme.colors.background;
+      <Card
+        sx={{
+          mt: 3,
+          p: { xs: 2, sm: 3 },
+          mb: 4,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+          borderRadius: 3,
+          textAlign: { xs: "center", sm: "left" }, // Center text on mobile
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: {
+              xs: "center", // center content on mobile
+              sm: "space-between", // side-by-side on larger screens
+            },
+            flexDirection: {
+              xs: "column", // stack vertically on mobile
+              sm: "row", // horizontal layout for tablets/desktops
+            },
+            gap: { xs: 3, md: 4 },
+          }}
+        >
+          {/* Left Section - Text & Buttons */}
+          <Box sx={{ flex: 1, minWidth: "260px" }}>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 700,
+                mb: 1,
+                fontSize: { xs: "20px", md: "24px" },
               }}
             >
-              <span style={{
-                fontSize: '20px',
-                marginRight: theme.spacing.md
-              }}>
-                {activity.icon}
-              </span>
-              <div>
-                <div style={{
-                  color: theme.colors.text.primary,
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  marginBottom: '2px'
-                }}>
-                  {activity.action}
-                </div>
-                <div style={{
-                  color: theme.colors.text.secondary,
-                  fontSize: '12px'
-                }}>
-                  {activity.time} • {activity.date}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+              View Your Profile
+            </Typography>
+
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{
+                mb: 3,
+                fontSize: { xs: "13px", md: "14px" },
+              }}
+            >
+              Manage your personal information, job details, and more.
+            </Typography>
+
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "row",
+                gap: 2,
+                justifyContent: { xs: "center", sm: "flex-start" },
+                flexWrap: "wrap",
+                overflow: "auto",
+              }}
+            >
+              <Button
+                type="primary"
+                variant="filled"
+                sx={{
+                  px: { xs: 2, md: 3 },
+                  py: 1.2,
+                  fontWeight: 600,
+                  textTransform: "none",
+                  fontSize: { xs: "13px", md: "14px" },
+                  whiteSpace: "nowrap",
+                }}
+                onClick={() => navigate("/employee-profile/" + user?.id)}
+              >
+                View Profile
+              </Button>
+              <Button
+                type="secondary"
+                variant="outlined"
+                sx={{
+                  px: { xs: 2, md: 3 },
+                  py: 1.2,
+                  fontWeight: 600,
+                  textTransform: "none",
+                  fontSize: { xs: "13px", md: "14px" },
+                  whiteSpace: "nowrap",
+                }}
+                onClick={() => navigate("/attendance")}
+              >
+                View attendance
+              </Button>
+            </Box>
+          </Box>
+
+          {/* Right Section - Company Logo */}
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <img
+              src={CompanyLogo}
+              alt="Company Logo"
+              style={{
+                height: "auto",
+                width: "100%",
+                maxWidth: "200px",
+                objectFit: "contain",
+              }}
+            />
+          </Box>
+        </Box>
+      </Card>
+
+      <Grid container spacing={3}>
+        {/* Team Activity Feed */}
+        <Grid item xs={12} md={5}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            {/* Quick Overview */}
+            <Card sx={{ p: 3, borderRadius: 2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 3 }}>
+                Quick Overview
+              </Typography>
+              <Grid container spacing={2}>
+                {quickOverview.map((item, index) => (
+                  <Grid item xs={6} key={index}>
+                    <Box sx={{ textAlign: "center" }}>
+                      <Typography
+                        variant="h3"
+                        sx={{
+                          fontWeight: 700,
+                          color: item.color,
+                          mb: 1,
+                        }}
+                      >
+                        {item.value}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ fontSize: "12px" }}
+                      >
+                        {item.label}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                ))}
+              </Grid>
+            </Card>
+
+            {/* Upcoming Events */}
+            <Card sx={{ p: 3, borderRadius: 2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 3 }}>
+                Upcoming Events
+              </Typography>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+                {upcomingEvents.map((event) => (
+                  <Box
+                    key={event.id}
+                    sx={{
+                      display: "flex",
+                      gap: 2,
+                      alignItems: "flex-start",
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 1,
+                        bgcolor: "#FFF4F0",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Box
+                        component="span"
+                        sx={{
+                          fontSize: "20px",
+                          color: event.color,
+                        }}
+                      >
+                        📅
+                      </Box>
+                    </Box>
+                    <Box>
+                      <Typography
+                        variant="body1"
+                        sx={{
+                          fontWeight: 600,
+                          mb: 0.5,
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {event.title}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ fontSize: "13px" }}
+                      >
+                        {event.date}
+                      </Typography>
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+            </Card>
+          </Box>
+        </Grid>
+        {role !== "USER" && (
+          <Grid item xs={12} md={7}>
+            <Card sx={{ p: 3, height: "100%", borderRadius: 2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 3 }}>
+                {role === "MANAGER" ? "My Team" : "All Employees"} Overview
+              </Typography>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+                {teamFeed.map((activity) => (
+                  <Box
+                    key={activity.id}
+                    sx={{
+                      display: "flex",
+                      gap: 2,
+                      alignItems: "center",
+                      p: 2,
+                      bgcolor: "background.paper",
+                      borderRadius: 1.5,
+                      border: "1px solid",
+                      borderColor: "divider",
+                    }}
+                  >
+                    <Avatar
+                      sx={{
+                        bgcolor: theme.colors.primary,
+                        width: 40,
+                        height: 40,
+                        fontSize: "18px",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {activity.avatar}
+                    </Avatar>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="body1" sx={{ fontWeight: 600, mb: 0.5 }}>
+                        {activity.name}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {activity.email}
+                      </Typography>
+                    </Box>
+                  </Box>
+                ))}
+                {teamFeed.length === 0 && (
+                  <Typography variant="body2" color="text.secondary">
+                    No team data available.
+                  </Typography>
+                )}
+              </Box>
+            </Card>
+          </Grid>
+        )}
+
+        {/* Right Column - Quick Overview & Upcoming Events */}
+      </Grid>
     </div>
   );
 };

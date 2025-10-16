@@ -1,130 +1,196 @@
 import config from "../config/config";
-import apiService from "../utils/http-interceptor";
-import axios from "axios";
+import apiService from "../utils/apiService";
+import axios from "../utils/axiosInterceptor";
+import { getCookie } from "../utils/cookiesUtil";
 
-const API = config.webSiteUrl;
-const HIP_API = config.webHipSiteUrl;
-const APPOINTMENT_API = config.patientCare;
 const LOCAL_API = "http://localhost:3000/api";
 
-const getAuthHeaders = () => ({
-    'Authorization': `Bearer ${sessionStorage.getItem('token')}`
-});
-
-const getAuthHeadersWithUserId = () => ({
-    'Authorization': `Bearer ${sessionStorage.getItem('token')}`,
-    'userId': sessionStorage.getItem('userId'),
-});
-
-const getHeaders = () => ({
-    'Facility-id': sessionStorage.getItem('facilityId'),
-    'Branch-id': sessionStorage.getItem('branchId'),
-    'Authorization': `Bearer ${sessionStorage.getItem('token')}`
-});
-
-const getHeaders1 = () => ({
-    'Facility-Id': sessionStorage.getItem('facilityId'),
-    'Branch-Id': sessionStorage.getItem('branchId'),
-    'Authorization': `Bearer ${sessionStorage.getItem('token')}`,
-    'accept': '*/*'
-});
-
-const getNormalPostHeaders = () => ({
-    Accept: "application/json",
+// ✅ Always get latest token for Authorization header
+const getAuthHeaders = () => {
+  const token = getCookie("accessToken");
+  return {
     "Content-Type": "application/json",
-});
-
-const getPostAuthHeaders = () => ({
-    'Accept': 'application/json',
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${sessionStorage.getItem('token')}`
-});
-
-const getPostHeaders = () => ({
-    'Accept': 'application/json',
-    'Content-Type': 'application/json',
-    'Facility-id': sessionStorage.getItem('facilityId'),
-    'Branch-id': sessionStorage.getItem('branchId'),
-    'Authorization': `Bearer ${sessionStorage.getItem('token')}`
-});
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
 
 export const EmployeeAPI = {
-     async cats() {
-        return await axios.get(`${HIP_API}/posts`);
-    },
+  // ✅ LOGIN (no header required)
+  async login(body) {
+    try {
+      const response = await axios.post(`${LOCAL_API}/employees/login`, body, {
+        headers: { "Content-Type": "application/json" },
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || "Login failed");
+    }
+  },
 
-    async fetchEmployeeData(employeeId) {
-        const response = await fetch(`${LOCAL_API}/employees/${employeeId}`, {
-        });
-        // if (!response.ok) {
-        //     throw new Error(`HTTP error! Status: ${response.status}`);
-        // }
-        return response.json();
-    },
-    
+  // ✅ Get single employee details
+  async fetchEmployeeData(employeeId) {
+    try {
+      const response = await axios.get(`${LOCAL_API}/employees/${employeeId}`, {
+        headers: getAuthHeaders(),
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching employee data:", error.response?.data || error.message);
+      throw error;
+    }
+  },
 
-    async requestCredentials(body) {
-        return await fetch(`${HIP_API}/auth/request-credentials`, body);
-    },
+  // ✅ Create new employee
+  async createEmployee(employeeData) {
+    try {
+      const response = await axios.post(`${LOCAL_API}/employees/create`, employeeData, {
+        headers: getAuthHeaders(),
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error creating employee:", error.response?.data || error.message);
+      throw error;
+    }
+  },
 
-    async createAccount(body) {
-        return await fetch(`${HIP_API}/auth/create-account`, body);
-    },
+  // ✅ Get all employees
+  async getAllEmployees() {
+    try {
+      const response = await axios.get(`${LOCAL_API}/employees/all`, {
+        headers: getAuthHeaders(),
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching employees:", error.response?.data || error.message);
+      throw error;
+    }
+  },
 
-    async verifyOTP(body) {
-        return await fetch(`${HIP_API}/auth/create-account/verify-otp`, body);
-    },
+  // ✅ Get all managers
+  async getAllManagers() {
+    try {
+      const response = await axios.get(`${LOCAL_API}/employees/managers`, {
+        headers: getAuthHeaders(),
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching managers:", error.response?.data || error.message);
+      throw error;
+    }
+  },
 
-    async getToken(code) {
-        return await axios.post(`${HIP_API}/auth/oauth2`, code, {
-            headers: getNormalPostHeaders(),
-        });
-    },
+  // ✅ Get manager by ID
+  async getManagerById(id) {
+    try {
+      const response = await axios.get(`${LOCAL_API}/employees/managers/${id}`, {
+        headers: getAuthHeaders(),
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching manager by ID:", error.response?.data || error.message);
+      throw error;
+    }
+  },
 
-    async forgotPassword(email) {
-        return await fetch(`${HIP_API}/auth/forgot-password?email=${email}`)
-    },
+  // ✅ Get subordinates of a manager
+  async getSubordinates(managerId) {
+    try {
+      const response = await axios.get(`${LOCAL_API}/employees/manager/${managerId}`, {
+        headers: getAuthHeaders(),
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching subordinates:", error.response?.data || error.message);
+      throw error;
+    }
+  },
 
-    async resetPassword(token, body) {
-        return await axios.post(`${HIP_API}/auth/reset-password?token=${token}`, body);
-    },
+  // ✅ Assign manager (ADMIN only)
+  async assignManager(payload) {
+    try {
+      const response = await axios.patch(`${LOCAL_API}/employees/assign-manager`, payload, {
+        headers: getAuthHeaders(),
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error assigning manager:", error.response?.data || error.message);
+      throw error;
+    }
+  },
 
-    async prePatientRegistration(data) {
-        return await axios.post(`${HIP_API}/pre-patient-registration`, data,
+  // ✅ Update employee details (HR, ADMIN)
+  async updateEmployee(id, employeeData) {
+    try {
+      const response = await axios.put(`${LOCAL_API}/employees/edit/${id}`, employeeData, {
+        headers: getAuthHeaders(),
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error updating employee:", error.response?.data || error.message);
+      throw error;
+    }
+  },
 
-            {
-                headers: getPostHeaders()
-            }
-        );
-    },
+  // ✅ Example: External HIP service
+  async getUserDetailById(id) {
+    try {
+      const response = await axios.get(`${LOCAL_API}/auth/user-detail-id`, {
+        headers: getAuthHeaders(),
+        params: { id },
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching HIP user detail:", error.response?.data || error.message);
+      throw error;
+    }
+  },
 
-    async getUserDetail(email) {
+  async getDepartments() {
+    try {
+      const response = await axios.get(`${LOCAL_API}/departments`, {
+        headers: getAuthHeaders(),
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching HIP user detail:", error.response?.data || error.message);
+      throw error;
+    }
+  },
+  async getManagerById(id) {
+    try {
+      const response = await axios.get(`${LOCAL_API}/employees/manager/${id}`, {
+        headers: getAuthHeaders(),
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching manager by ID:", error.response?.data || error.message);
+      throw error;
+    }
+  },
 
-        const response = await fetch(`${HIP_API}/auth/user-detail?emailId=${email}`,
-            {
-                headers: getAuthHeaders()
-            }
-        );
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.json();
+  // ✅ Get subordinates of a specific manager (HR, ADMIN)
+  async getSubordinates(managerId) {
+    try {
+      const response = await axios.get(`${LOCAL_API}/employees/managers/subordinate/${managerId}`, {
+        headers: getAuthHeaders(),
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching subordinates:", error.response?.data || error.message);
+      throw error;
+    }
+  },
 
-    },
-
-    async getUserDetailById(id) {
-
-        const response = await fetch(`${HIP_API}/auth/user-detail-id?id=${id}`,
-            {
-                headers: getAuthHeaders()
-            }
-        );
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.json();
-
-    },
-
-    
-}
+  // ✅ Assign manager (ADMIN, HR)
+  async assignManager(payload) {
+    try {
+      const response = await axios.patch(`${LOCAL_API}/employees/assign/manager`, payload, {
+        headers: getAuthHeaders(),
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error assigning manager:", error.response?.data || error.message);
+      throw error;
+    }
+  },
+};

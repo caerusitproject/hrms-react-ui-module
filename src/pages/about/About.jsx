@@ -195,7 +195,7 @@ const About = () => {
       </div>
 
       {/* Contact Section - Hidden for EMPLOYEE role */}
-      {user?.role && user.role !== 'EMPLOYEE' && (
+      {user?.role && user.role !== 'USER' && (
         <div className="card" style={{
           padding: theme.spacing.xl,
           textAlign: 'center',
