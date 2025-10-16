@@ -112,49 +112,6 @@ const Dashboard = () => {
   return (
     <div>
       {/* Header */}
-
-      {/* Quick Actions */}
-      {/* <Box sx={{ textAlign: 'center', mb: 4 }}>
-        <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
-          Quick Actions
-        </Typography>
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            gap: 2,
-            flexWrap: 'wrap'
-          }}
-        >
-          <Button
-            variant="contained"
-            onClick={() => navigate('/dashboard')}
-            sx={{
-              px: 3,
-              py: 1.5,
-              fontWeight: 600,
-              textTransform: 'none',
-              fontSize: { xs: '14px', md: '16px' }
-            }}
-          >
-            Go to Dashboard
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() => navigate('/employee-profile/' + user?.id)}
-            sx={{
-              px: 3,
-              py: 1.5,
-              fontWeight: 600,
-              textTransform: 'none',
-              fontSize: { xs: '14px', md: '16px' }
-            }}
-          >
-            View Profile
-          </Button>
-        </Box>
-      </Box> */}
-
       {/* Main Dashboard Content */}
       <h1
         style={{
@@ -255,7 +212,7 @@ const Dashboard = () => {
                 }}
                 onClick={() => navigate("/attendance")}
               >
-                View attendance
+                View Attendance
               </Button>
             </Box>
           </Box>
@@ -321,7 +278,7 @@ const Dashboard = () => {
             {/* Upcoming Events */}
             <Card sx={{ p: 3, borderRadius: 2 }}>
               <Typography variant="h6" sx={{ fontWeight: 700, mb: 3 }}>
-                Upcoming Events
+                Todays Events
               </Typography>
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
                 {upcomingEvents.map((event) => (

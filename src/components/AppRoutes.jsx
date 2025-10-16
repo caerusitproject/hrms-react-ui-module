@@ -10,6 +10,7 @@ import ManageOrganization from "../pages/admin/ManageOrganization";
 import EmployeeProfileEdit from "../pages/profile/EmployeeProfileEdit";
 import EmployeeProfileView from "../pages/profile/EmployeeProfileView";
 import EmployeeList from "../pages/profile/EmployeeList";
+import Teamemployee from "../pages/profile/Teamemployee";
 // Lazy load components
 const Login = lazy(() => import("../pages/auth/Login"));
 const MainLayout = lazy(() => import("./layout/MainLayout"));
@@ -128,6 +129,16 @@ const AppRoutes = () => {
                 <ProtectedRoute requiredRoles={["ADMIN", "HR", "MANAGER"]}>
                   <Suspense fallback={<CustomLoader />}>
                     <EmployeeList />
+                  </Suspense>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="my-team"
+              element={
+                <ProtectedRoute requiredRoles={[ "MANAGER"]}>
+                  <Suspense fallback={<CustomLoader />}>
+                    <Teamemployee />
                   </Suspense>
                 </ProtectedRoute>
               }

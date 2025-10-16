@@ -18,8 +18,7 @@ const EmployeeProfileView = () => {
   //console.log("Authenticated user:", user);
   const role = user?.role || "USER";
   //console.log("User role:", role);
-  const  id  = user?.id
-
+  const { id } = useParams();
   // Responsive check
   const isMobile = window.innerWidth <= 768;
 

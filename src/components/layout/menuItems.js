@@ -55,6 +55,13 @@ export const menuItems = [
     requiredRoles: ["HR", "ADMIN"],
   },
   {
+    path: "/my-team",
+    label: "My Team",
+    icon: GroupIcon,
+    key: "my-team",
+    requiredRoles: ["MANAGER"],
+  },
+  {
     path: "/broadcast",
     label: "Broadcast",
     icon: CampaignIcon,
