@@ -41,7 +41,9 @@ const EmployeeList = () => {
   }, []);
 
   const handleViewProfile = (id) => {
-    navigate(`/employee-profile/${id}`);
+    let empId = employees.find(emp => emp.id === id)?.id;
+    
+    navigate(`/employee-profile/${empId}`);
   };
 
   const handleAddEmployee = () => {

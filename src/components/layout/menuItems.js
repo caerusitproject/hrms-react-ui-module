@@ -10,7 +10,7 @@ import CampaignIcon from "@mui/icons-material/Campaign"; // Broadcast
 import ConfigIcon from "@mui/icons-material/Settings"; // Admin Config
 import GroupIcon from "@mui/icons-material/Group";
  const user = JSON.parse(localStorage.getItem("user"));
-  const userId = user?.id || 1; // fallback to 1 if not found
+const userId = user?.id || 1; // fallback to 1 if not found
 export const menuItems = [
   {
     path: "/home",
@@ -31,7 +31,7 @@ export const menuItems = [
     label: "Dashboard",
     icon: DashboardIcon,
     key: "dashboard",
-    requiredRoles: ["MANAGER", "HR", "ADMIN"],
+    requiredRoles: ["MANAGER", "HR", "ADMIN", "USER"],
   },
   {
     path: "/attendance",

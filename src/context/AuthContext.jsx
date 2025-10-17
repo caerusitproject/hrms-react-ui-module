@@ -69,7 +69,7 @@ export const AuthProvider = ({ children }) => {
       return true;
     } catch (error) {
       console.error('Login error:', error);
-      setError(error.response?.data?.message || error.message || 'Login failed');
+      setError(error.response?.data?.message || error.message || 'Login failed (Invalid email or password) ');
       setLoading(false);
       return false;
     }
@@ -78,9 +78,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setIsAuthenticated(false);
     setUser(null);
-    localStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('user');
-    localStorage.removeItem('sidebarCollapsed');
+    localStorage.clear();
   };
 
   useEffect(() => {

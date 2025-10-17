@@ -14,6 +14,7 @@ const EmployeeProfileEdit = () => {
   const { user } = useAuth();
   const isEditMode = !!id;
   const role = user?.role || "USER";
+  const currentUserId = Number(user?.id);
 
   const {
     register,
@@ -33,7 +34,9 @@ const EmployeeProfileEdit = () => {
   const [isMobile, setIsMobile] = useState(false);
 
   const isProfessionalEditable = ["HR", "ADMIN"].includes(role);
-
+  const isOwnProfile = isEditMode && parseInt(id) === currentUserId;
+  const canEditPersonal = !isEditMode || (["HR", "ADMIN"].includes(role) || isOwnProfile);
+  const canSave = !isEditMode || (canEditPersonal || isProfessionalEditable);
   const generateEmpCode = () => `EMP${Math.floor(1000 + Math.random() * 9000)}`;
 
   useEffect(() => {
@@ -56,8 +59,6 @@ const EmployeeProfileEdit = () => {
 
         if (isEditMode) {
           const data = await EmployeeAPI.fetchEmployeeData(id);
-          // let role = role;
-          // console.log("Set role in form:", role, roleNameToId[role], roleOptions);
 
           setValue("personalDetails.fullName", data.name || "");
           setValue("personalDetails.dateOfBirth", data.dateOfBirth || "");
@@ -83,20 +84,19 @@ const EmployeeProfileEdit = () => {
             data.employmentType || ""
           );
           setValue("professionalDetails.dateOfJoining", data.joiningDate || "");
-         const roleNameToId = {
+          
+          const roleNameToId = {
             "ADMIN": "1",
             "HR": "2",
             "MANAGER": "3",
             "USER": "4"
           };
           
-          const employeeRole = role;
-          console.log("Employee role from auth:", employeeRole);
+          const employeeRole = data.role || "USER";
           
           // Convert role name to ID for select dropdown
           const roleId = roleNameToId[employeeRole] || "4";
           setValue("professionalDetails.role", roleId);
-          console.log("Setting role ID:", roleId);
         } else {
           setValue("professionalDetails.empCode", generateEmpCode());
         }
@@ -187,6 +187,19 @@ const EmployeeProfileEdit = () => {
   return (
     <>
       <div style={{ paddingBottom: theme.spacing.xl }}>
+        {error && (
+          <div
+            style={{
+              color: theme.colors.error,
+              marginBottom: theme.spacing.md,
+              padding: theme.spacing.sm,
+              backgroundColor: theme.colors.error + "10",
+              borderRadius: theme.borderRadius.small,
+            }}
+          >
+            {error}
+          </div>
+        )}
         <h1
           style={{
             fontSize: "24px",
@@ -246,6 +259,7 @@ const EmployeeProfileEdit = () => {
               onChange={(e) =>
                 setAvatarPreview(URL.createObjectURL(e.target.files[0]))
               }
+              disabled={isEditMode && !canEditPersonal}
               style={{ display: "none" }}
             />
             <label
@@ -262,7 +276,8 @@ const EmployeeProfileEdit = () => {
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
-                cursor: "pointer",
+                cursor: isEditMode && !canEditPersonal ? "default" : "pointer",
+                opacity: isEditMode && !canEditPersonal ? 0.5 : 1,
               }}
             >
               📷
@@ -274,6 +289,7 @@ const EmployeeProfileEdit = () => {
               name="personalDetails.fullName"
               register={register}
               required
+              disabled={isEditMode && !canEditPersonal}
               errors={errors}
             />
           </div>
@@ -287,42 +303,49 @@ const EmployeeProfileEdit = () => {
               name="personalDetails.dateOfBirth"
               type="date"
               register={register}
+              disabled={isEditMode && !canEditPersonal}
               errors={errors}
             />
             <Input
               label="Gender"
               name="personalDetails.gender"
               register={register}
+              disabled={isEditMode && !canEditPersonal}
               errors={errors}
             />
             <Input
               label="Marital Status"
               name="personalDetails.maritalStatus"
               register={register}
+              disabled={isEditMode && !canEditPersonal}
               errors={errors}
             />
             <Input
               label="Father's Name"
               name="personalDetails.fatherName"
               register={register}
+              disabled={isEditMode && !canEditPersonal}
               errors={errors}
             />
             <Input
               label="Address"
               name="personalDetails.address"
               register={register}
+              disabled={isEditMode && !canEditPersonal}
               errors={errors}
             />
             <Input
               label="City"
               name="personalDetails.city"
               register={register}
+              disabled={isEditMode && !canEditPersonal}
               errors={errors}
             />
             <Input
               label="Country"
               name="personalDetails.country"
               register={register}
+              disabled={isEditMode && !canEditPersonal}
               errors={errors}
             />
           </div>
@@ -439,7 +462,7 @@ const EmployeeProfileEdit = () => {
         <Button
           type="primary"
           onClick={handleSubmit(onSubmit)}
-          disabled={saving}
+          disabled={saving || (isEditMode && !canSave)}
         >
           {saving ? "Saving..." : isEditMode ? "Save Changes" : "Create"}
         </Button>

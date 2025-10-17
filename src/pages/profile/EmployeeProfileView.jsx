@@ -7,7 +7,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 
 const EmployeeProfileView = () => {
-  
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -15,10 +14,15 @@ const EmployeeProfileView = () => {
   const [managers, setManagers] = useState([]);
   const navigate = useNavigate();
   const { user } = useAuth();
-  //console.log("Authenticated user:", user);
+
   const role = user?.role || "USER";
-  //console.log("User role:", role);
+
   const { id } = useParams();
+  const currentUserId = Number(user?.id);
+  const profileId = Number(id);
+  const isOwnProfile = profileId === currentUserId;
+  const canEditProfile = ["ADMIN", "HR"].includes(role) || isOwnProfile; // Update this line (use 'role' var for consistency)
+
   // Responsive check
   const isMobile = window.innerWidth <= 768;
 
@@ -56,9 +60,9 @@ const EmployeeProfileView = () => {
         const dept =
           deptResData.find((d) => Number(d.id) === Number(data.departmentId))
             ?.departmentName || "N/A";
-        const mgr =
-          mgrResData.find((m) => Number(m.id) === Number(data.managerId))
-            ?.name;
+        const mgr = mgrResData.find(
+          (m) => Number(m.id) === Number(data.managerId)
+        )?.name;
         const age = calculateAge(data.dateOfBirth);
 
         const transformedData = {
@@ -105,8 +109,6 @@ const EmployeeProfileView = () => {
     };
     loadEmployeeData();
   }, [id]);
-
-  const canEditProfile = user?.role === "ADMIN" || user?.role === "HR";
 
   if (loading)
     return (
@@ -162,7 +164,9 @@ const EmployeeProfileView = () => {
   }`;
 
   // 🔹 Card swap logic: on desktop → personal styled like professional; on mobile → reversed
-  const personalCardStyle = isMobile ? sectionStyle(false) : sectionStyle(false);
+  const personalCardStyle = isMobile
+    ? sectionStyle(false)
+    : sectionStyle(false);
   const professionalCardStyle = isMobile
     ? sectionStyle(false)
     : sectionStyle(false);
@@ -199,9 +203,14 @@ const EmployeeProfileView = () => {
         >
           Employee Profile
         </h1>
-        <Button type="primary" onClick={() => navigate(`/employee/edit/${id}`)}>
-          Edit Profile
-        </Button>
+        {canEditProfile && (
+          <Button
+            type="primary"
+            onClick={() => navigate(`/employee/edit/${id}`)}
+          >
+            Edit Profile
+          </Button>
+        )}
       </div>
 
       {/* Avatar Card */}

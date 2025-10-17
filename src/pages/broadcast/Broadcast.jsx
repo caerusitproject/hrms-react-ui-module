@@ -108,12 +108,13 @@ const Broadcast = () => {
       key={broadcast.id}
       style={{
         backgroundColor: theme.colors.surface,
-        padding: isMobile ? theme.spacing.md : theme.spacing.lg,
-        borderRadius: theme.borderRadius.small,
-        marginBottom: theme.spacing.sm,
+        padding: isMobile ? theme.spacing.sm : theme.spacing.sm,
+        borderRadius: theme.borderRadius.large,
+        marginBottom: theme.spacing.xl,
         border: `1px solid ${theme.colors.background}`,
         boxShadow: theme.shadows.small,
         transition: "all 0.3s ease",
+       
       }}
     >
       <div
@@ -244,7 +245,7 @@ const Broadcast = () => {
       <div style={{ 
         display: "flex", 
         gap: theme.spacing.sm, 
-        marginBottom: theme.spacing.lg, 
+        marginBottom: theme.spacing.xxl, 
         flexWrap: "wrap",
         justifyContent: isMobile ? "center" : "flex-start",
       }}>
@@ -262,7 +263,9 @@ const Broadcast = () => {
       </div>
 
       {/* Broadcast List */}
-      <div>
+      <div
+        style={{ marginTop: theme.spacing.xxl }}
+      >
         {broadcasts.length === 0 ? (
           <p style={{ 
             color: theme.colors.text.secondary, 

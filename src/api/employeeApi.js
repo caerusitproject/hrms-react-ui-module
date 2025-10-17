@@ -23,7 +23,7 @@ export const EmployeeAPI = {
       });
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || "Login failed");
+      throw new Error(error.response?.data?.message || "Login failed (Invalid email or password)");
     }
   },
 

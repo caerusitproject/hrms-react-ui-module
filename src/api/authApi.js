@@ -15,7 +15,7 @@ export const AuthApi = {
       const response = await axios.post(`${LOCAL_API}/auth/login`, body);
       return response.data; // axios returns data in response.data
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Login failed');
+      throw new Error(error.response?.data?.message || 'iLogin failed (Invalid email or password)');
     }
   },
 

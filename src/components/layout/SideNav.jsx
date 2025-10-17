@@ -1,4 +1,4 @@
-// SideNav.jsx (updated with highlight styling and nested route support)
+// SideNav.jsx (updated with dynamic profile navigation and conditional highlighting)
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
@@ -35,8 +35,13 @@ const SideNav = ({ collapsed, onToggle }) => {
     }
   };
 
-  const handleNavigation = (path) => {
-    navigate(path);
+  // Updated handleNavigation: For profile, always use current user ID
+  const handleNavigation = (path, itemKey) => {
+    if (itemKey === "profile" && user?.id) {
+      navigate(`/employee-profile/${user.id}`);
+    } else {
+      navigate(path);
+    }
     if (isMobile) onToggle();
   };
 
@@ -95,8 +100,6 @@ const SideNav = ({ collapsed, onToggle }) => {
             marginRight: isMobile ? theme.spacing.xxl : theme.spacing.md,
             alignItems: "center",
             justifyContent: "space-between",
-           // gap: isMobile ? theme.spacing.sm : theme.spacing.md,
-            //backgroundColor: theme.colors.background,
             minHeight: "80px",
             overflow: "visible",
           }}
@@ -116,7 +119,7 @@ const SideNav = ({ collapsed, onToggle }) => {
                   : theme.colors.primary,
                 transition: theme.transitions.fast,
                 marginLeft: isMobile ? theme.spacing.lg : theme.spacing.sm,
-                marginRight: isMobile ? theme.spacing.xs: theme.spacing.sm,
+                marginRight: isMobile ? theme.spacing.xs : theme.spacing.sm,
                 marginBottom: isMobile ? theme.spacing.sm : "0",
               }}
             >
@@ -129,9 +132,9 @@ const SideNav = ({ collapsed, onToggle }) => {
                 src={CompanyLogo}
                 alt="Company Logo"
                 style={{
-                   height: isMobile ? "62px" : "75px", // increased height
-            width: isMobile ? "auto" : "auto", // keeps aspect ratio
-            maxWidth: "200px", // ensures it doesn’t stretch too much
+                  height: isMobile ? "62px" : "75px", // increased height
+                  width: isMobile ? "auto" : "auto", // keeps aspect ratio
+                  maxWidth: "200px", // ensures it doesn’t stretch too much
                   objectFit: "contain",
                   position: "relative",
                   zIndex: 1,
@@ -207,7 +210,7 @@ const SideNav = ({ collapsed, onToggle }) => {
           }}
         >
           {filteredMenuItems.map((item) => {
-            // Enhanced isActive logic for nested routes
+            // Enhanced isActive logic: For profile, only active if exactly on own profile path
             const isActive = (() => {
               const currentPath = location.pathname;
 
@@ -223,21 +226,20 @@ const SideNav = ({ collapsed, onToggle }) => {
                 }
               }
 
-              // Special case for employee-profile highlighting when on employee routes
-              if (
-                item.path === "/employee-profile" &&
-                currentPath.startsWith("/employee")
-              ) {
-                return true;
+              if (item.key === "profile" && user?.id) {
+                const ownProfilePath = `/employee-profile/${user.id}`;
+                const ownEditPath = `/employee/edit/${user.id}`;
+                return (
+                  currentPath === ownProfilePath || currentPath === ownEditPath
+                );
               }
-
               return false;
             })();
 
             return (
               <div
                 key={item.key}
-                onClick={() => handleNavigation(item.path)}
+                onClick={() => handleNavigation(item.path, item.key)}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -249,7 +251,6 @@ const SideNav = ({ collapsed, onToggle }) => {
                       ? `${theme.spacing.sm} ${theme.spacing.xs}`
                       : `${theme.spacing.md} ${theme.spacing.lg}`,
                   cursor: "pointer",
-                  // Replace this section:
                   backgroundColor: isActive
                     ? collapsed && !isMobile
                       ? `${theme.colors.primaryLight}34` // Primary dark when collapsed
