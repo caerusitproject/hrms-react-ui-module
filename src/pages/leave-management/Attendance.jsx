@@ -1,28 +1,94 @@
 import React, { useState, useEffect } from "react";
+import { useAuth } from "../../hooks/useAuth";
 import Calendar from "../../components/common/Calendar";
 import { theme } from "../../theme/theme";
-import { AttendanceAPI } from "../../api/attendanceApi"; // Adjust path as needed
+import { AttendanceAPI } from "../../api/attendanceApi";
+import { AllemployeeApi } from "../../api/getallemployeeApi";
+import { Select, MenuItem, FormControl } from "@mui/material";
+import CustomLoader from "../../components/common/CustomLoader";
 
 const Attendance = () => {
+  const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [attendanceData, setAttendanceData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [employees, setEmployees] = useState([]);
+  const [selectedEmpCode, setSelectedEmpCode] = useState("");
+  const [showDropdown, setShowDropdown] = useState(true);
+  const [employeesLoading, setEmployeesLoading] = useState(false);
   const today = new Date();
-  const empCode = "EMP001"; // Hardcoded for now; can be dynamic via props or context
+  const role = user?.role || "USER";
+  const canViewAll = ["MANAGER", "ADMIN", "HR"].includes(role);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
-  // Fetch attendance data when month or year changes
+  // Default to current user's empCode
   useEffect(() => {
+    if (user?.empCode) {
+      setSelectedEmpCode(user.empCode);
+    } else {
+      setSelectedEmpCode("EMP001");
+    }
+  }, [user]);
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Fetch employees list if authorized
+  useEffect(() => {
+    if (canViewAll) {
+      const fetchEmployees = async () => {
+        try {
+          setEmployeesLoading(true);
+          const response = await AllemployeeApi.getEmployeesByRole();
+          if (response.success) {
+            setEmployees(response.data.employeeList || []);
+            if (user?.id) {
+              const currentEmp = response.data.employeeList.find(
+                (emp) => emp.id === user.id.toString()
+              );
+              if (currentEmp) {
+                setSelectedEmpCode(currentEmp.empCode);
+              }
+            }
+          } else {
+            throw new Error(response.message || "Failed to fetch employees");
+          }
+        } catch (err) {
+          console.error("Error fetching employees:", err);
+          setShowDropdown(false);
+        } finally {
+          setEmployeesLoading(false);
+        }
+      };
+      fetchEmployees();
+    }
+  }, [canViewAll, user]);
+
+  // Fetch attendance data when month/year or selectedEmpCode changes
+  useEffect(() => {
+    if (!selectedEmpCode) return;
     const fetchAttendance = async () => {
       try {
         setLoading(true);
-        const month = currentDate.getMonth() +1; // 0-based month
+        setError(null);
+        const month = currentDate.getMonth() + 1;
         const year = currentDate.getFullYear();
-        const response = await AttendanceAPI.getAttendanceByEmployee(empCode, month, year);
+        const response = await AttendanceAPI.getAttendanceByEmployee(
+          selectedEmpCode,
+          month,
+          year
+        );
         if (response.success) {
           setAttendanceData(response.data);
         } else {
-          throw new Error(response.message || "Failed to fetch attendance data");
+          throw new Error(
+            response.message || "Failed to fetch attendance data"
+          );
         }
       } catch (err) {
         setError(err.message);
@@ -31,7 +97,7 @@ const Attendance = () => {
       }
     };
     fetchAttendance();
-  }, [currentDate]); // Re-run when currentDate changes
+  }, [currentDate, selectedEmpCode]);
 
   // Calculate hours from checkIn and checkOut times
   const calculateHours = (checkIn, checkOut) => {
@@ -44,14 +110,17 @@ const Attendance = () => {
     return `${hours.toFixed(1)}hrs`;
   };
 
-  // Transform API data to match Calendar component's events structure
+  // Transform API data for calendar
   const events = attendanceData.map((item) => ({
     date: item.date,
     type: item.status === "Absent" ? "Absent" : "Present",
-    label: item.status === "Absent" ? "Absent" : calculateHours(item.checkIn, item.checkOut),
+    label:
+      item.status === "Absent"
+        ? "Absent"
+        : calculateHours(item.checkIn, item.checkOut),
   }));
 
-  // Calculate total hours, present days, and absent days
+  // Totals
   const totalHours = attendanceData
     .filter((a) => a.status !== "Absent")
     .reduce((sum, a) => {
@@ -68,16 +137,50 @@ const Attendance = () => {
     setCurrentDate(newDate);
   };
 
-  // const handleDateClick = (dateStr) => {
-  //   const data = attendanceData.find((a) => a.date === dateStr);
-  //   if (data) {
-  //     const hours = calculateHours(data.checkIn, data.checkOut);
-  //     alert(`Date: ${dateStr}\nStatus: ${data.status}\nHours: ${hours}`);
-  //   }
-  // };
+  const boxStyle = {
+    textAlign: "center",
+    fontSize: isMobile ? "12px" : "16px",
+    fontWeight: 600,
+  };
 
-  if (loading) {
-    return <div>Loading...</div>;
+  const labelStyle = {
+    fontSize: isMobile ? "9px" : "16px",
+    opacity: 0.9,
+    whiteSpace: "nowrap",
+  };
+
+  const buttonStyle = {
+    background: `${theme.colors.primary}`,
+    border: "2px solid white ",
+    color: "#fff",
+    padding: isMobile ? "8px 12px" : "8px 14px",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontSize: isMobile ? "10px" : "12px",
+    fontWeight: "bold",
+    transition: "0.3s",
+  };
+
+  const headerCommonStyle = {
+    width: "100%",
+    marginBottom: "16px",
+    backgroundColor: `${theme.colors.primaryLight}34`,
+    borderRadius: "10px",
+  };
+
+  const summaryBoxesStyle = {
+    display: "flex",
+    gap: isMobile ? "6px" : "20px",
+    justifyContent: "center",
+    flexWrap: "nowrap",
+  };
+
+  if (loading || employeesLoading) {
+    return (
+      <div>
+        <CustomLoader />
+      </div>
+    );
   }
 
   if (error) {
@@ -85,96 +188,378 @@ const Attendance = () => {
   }
 
   return (
-    <div
-      style={{
-        width: "100%",
-        maxWidth: "95%",
-        boxSizing: "border-box",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <div
+    <div>
+      <h1
         style={{
-          background: theme.colors.success,
-          boxShadow: theme.shadows.medium,
-          padding: "24px",
-          borderRadius: "12px",
-          marginBottom: "20px",
+          fontSize: "25px",
+          fontWeight: "700",
+          color: theme.colors.text.primary,
+          margin: 0,
         }}
       >
+        Attendance Calender
+      </h1>
+      {isMobile ? (
+        // 📱 Mobile layout
+        <div
+          style={{
+            ...headerCommonStyle,
+            display: "flex",
+            flexDirection: "column",
+            padding: "4px 8px",
+            gap: "8px",
+            alignItems: "center",
+            marginTop: "15px"
+          }}
+        >
+          {/* <h2
+            style={{
+              color: `${theme.colors.primary}`,
+              margin: 0,
+              fontSize: "23px",
+              textAlign: "center",
+            }}
+          >
+            Attendance Calendar
+          </h2> */}
+
+          {canViewAll && employees.length > 0 && (
+            <div
+              style={{
+                width: isMobile ? "230px" : "350px",
+                marginBottom: "8px",
+                marginTop: "4px",
+              }}
+            >
+              <FormControl fullWidth size="small">
+                <Select
+                  value={selectedEmpCode || ""}
+                  onChange={(e) => setSelectedEmpCode(e.target.value)}
+                  displayEmpty
+                  renderValue={(selected) => {
+                    // If nothing selected → show placeholder
+                    if (!selected) {
+                      return (
+                        <em
+                          style={{
+                            color: theme.colors.text.secondary,
+                            fontStyle: "italic",
+                          }}
+                        >
+                          Select Employee
+                        </em>
+                      );
+                    }
+
+                    // If user selects their own empCode → show placeholder instead of name
+                    const isOwn = selected === user?.empCode;
+                    if (isOwn) {
+                      return (
+                        <em
+                          style={{
+                            color: theme.colors.text.secondary,
+                            fontStyle: "italic",
+                          }}
+                        >
+                          Select Employee
+                        </em>
+                      );
+                    }
+
+                    // Otherwise show employee name or fallback to empCode
+                    const employeeName =
+                      employees.find((emp) => emp.empCode === selected)?.name ||
+                      selected;
+
+                    return employeeName;
+                  }}
+                  sx={{
+                    backgroundColor: "#fff", // white background
+                    borderRadius: "6px",
+                    fontSize: isMobile ? "12px" : "14px",
+                    "& .MuiOutlinedInput-notchedOutline": { border: "none" },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      border: "none",
+                    },
+                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      border: "none",
+                    },
+                    "& .MuiSelect-select": {
+                      padding: isMobile ? "6px 10px" : "8px 12px",
+                    },
+                  }}
+                >
+                  <MenuItem value="" disabled>
+                    <em
+                      style={{
+                        fontStyle: "italic",
+                        color: theme.colors.text.secondary,
+                      }}
+                    >
+                      Select Employee
+                    </em>
+                  </MenuItem>
+
+                  {employees.map((emp) => (
+                    <MenuItem key={emp.id} value={emp.empCode}>
+                      {emp.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </div>
+          )}
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              width: "100%",
+            }}
+          >
+            <button onClick={() => handleMonthChange(-1)} style={buttonStyle}>
+              ←
+            </button>
+
+            <div
+              style={{
+                ...summaryBoxesStyle,
+                flex: 1,
+                justifyContent: "center",
+              }}
+            >
+              <div
+                style={{
+                  ...boxStyle,
+                  backgroundColor: "transparent",
+                  border: `1px solid ${theme.colors.secondary}`,
+                  borderRadius: "10px",
+                  padding: "6px 8px",
+                }}
+              >
+                {totalHours.toFixed(1)}
+                <div style={{ ...labelStyle, color: theme.colors.black }}>
+                  Total Hours
+                </div>
+              </div>
+              <div
+                style={{
+                  ...boxStyle,
+                  backgroundColor: "transparent",
+                  border: `1px solid ${theme.colors.success}`,
+                  borderRadius: "10px",
+                  padding: "6px 8px",
+                }}
+              >
+                {presentDays}
+                <div style={{ ...labelStyle, color: theme.colors.black }}>
+                  Days Present
+                </div>
+              </div>
+              <div
+                style={{
+                  ...boxStyle,
+                  backgroundColor: "transparent",
+                  border: `1px solid ${theme.colors.error}`,
+                  borderRadius: "10px",
+                  padding: "6px 8px",
+                }}
+              >
+                {absentDays}
+                <div style={{ ...labelStyle, color: theme.colors.black }}>
+                  Days Absent
+                </div>
+              </div>
+            </div>
+
+            <button onClick={() => handleMonthChange(1)} style={buttonStyle}>
+              →
+            </button>
+          </div>
+        </div>
+      ) : (
+        // 🖥 Desktop layout
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: "16px",
+            ...headerCommonStyle,
+            padding: "12px 16px",
+            marginTop: "20px"
           }}
+          className="header-container"
         >
-          <div style={{ display: "flex", gap: "12px" }}>
-            <button
-              onClick={() => handleMonthChange(-1)}
+          <button onClick={() => handleMonthChange(-1)} style={buttonStyle}>
+            ←
+          </button>
+
+          <div className="summary-boxes" style={summaryBoxesStyle}>
+            <div
               style={{
-                background: "rgba(255,255,255,0.2)",
-                border: "none",
-                color: "#fff",
-                padding: "8px 16px",
-                borderRadius: "6px",
-                cursor: "pointer",
-                fontSize: "18px",
+                ...boxStyle,
+                backgroundColor: "transparent",
+                border: `2px solid ${theme.colors.secondary}`,
+                borderRadius: "8px",
+                padding: "8px 12px",
               }}
             >
-              ←
-            </button>
-            <button
-              onClick={() => handleMonthChange(1)}
+              {totalHours.toFixed(1)}
+              <div style={{ ...labelStyle, color: theme.colors.black }}>
+                Total Hours
+              </div>
+            </div>
+            <div
               style={{
-                background: "rgba(255,255,255,0.2)",
-                border: "none",
-                color: "#fff",
-                padding: "8px 16px",
-                borderRadius: "6px",
-                cursor: "pointer",
-                fontSize: "18px",
-                fontWeight: "bold",
+                ...boxStyle,
+                backgroundColor: "transparent",
+                border: `2px solid ${theme.colors.success}`,
+                borderRadius: "8px",
+                padding: "8px 12px",
               }}
             >
-              →
-            </button>
+              {presentDays}
+              <div style={{ ...labelStyle, color: theme.colors.black }}>
+                Days Present
+              </div>
+            </div>
+            <div
+              style={{
+                ...boxStyle,
+                backgroundColor: "transparent",
+                border: `2px solid ${theme.colors.error}`,
+                borderRadius: "8px",
+                padding: "8px 12px",
+              }}
+            >
+              {absentDays}
+              <div style={{ ...labelStyle, color: theme.colors.black }}>
+                Days Absent
+              </div>
+            </div>
           </div>
 
-          <h2 style={{ color: "#fff", margin: 0 }}>Attendance Calendar</h2>
-          <div style={{ width: "100px" }}></div>
-        </div>
+          <div
+            className="title-select-wrapper"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "60px",
+              marginRight: "10px",
+              // marginLeft: "20px",
+            }}
+          >
+            {/* <h2
+              style={{
+                color: `${theme.colors.primary}`,
+                margin: 0,
+                fontSize: "24px",
+              }}
+            >
+              Attendance Calendar
+            </h2> */}
 
-        <div
-          style={{
-            display: "flex",
-            gap: "20px",
-            justifyContent: "center",
-            color: "#fff",
-          }}
-        >
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: "32px", fontWeight: "700" }}>{totalHours.toFixed(1)}</div>
-            <div style={{ fontSize: "14px", opacity: 0.9 }}>Total Hours</div>
+            {canViewAll && employees.length > 0 && (
+              <div
+                style={{
+                  width: "350px",
+                  // backgroundColor: "#fff",
+                  borderRadius: "6px",
+                  padding: "4px",
+                }}
+              >
+                <FormControl fullWidth size="small">
+                  <Select
+                    value={selectedEmpCode || ""}
+                    onChange={(e) => setSelectedEmpCode(e.target.value)}
+                    displayEmpty
+                    renderValue={(selected) => {
+                      // If nothing selected → show placeholder
+                      if (!selected) {
+                        return (
+                          <em
+                            style={{
+                              color: theme.colors.text.secondary,
+                              fontStyle: "italic",
+                            }}
+                          >
+                            Select Employee
+                          </em>
+                        );
+                      }
+
+                      // If user selects their own empCode → show placeholder instead of name
+                      const isOwn = selected === user?.empCode;
+                      if (isOwn) {
+                        return (
+                          <em
+                            style={{
+                              color: theme.colors.text.secondary,
+                              fontStyle: "italic",
+                            }}
+                          >
+                            Select Employee
+                          </em>
+                        );
+                      }
+
+                      // Otherwise show employee name or fallback to empCode
+                      const employeeName =
+                        employees.find((emp) => emp.empCode === selected)
+                          ?.name || selected;
+
+                      return employeeName;
+                    }}
+                    sx={{
+                      backgroundColor: "#fff", // white background
+                      borderRadius: "6px",
+                      fontSize: isMobile ? "12px" : "14px",
+                      "& .MuiOutlinedInput-notchedOutline": { border: "none" },
+                      "&:hover .MuiOutlinedInput-notchedOutline": {
+                        border: "none",
+                      },
+                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                        border: "none",
+                      },
+                      "& .MuiSelect-select": {
+                        padding: isMobile ? "6px 10px" : "8px 12px",
+                      },
+                    }}
+                  >
+                    <MenuItem value="" disabled>
+                      <em
+                        style={{
+                          fontStyle: "italic",
+                          color: theme.colors.text.secondary,
+                        }}
+                      >
+                        Select Employee
+                      </em>
+                    </MenuItem>
+
+                    {employees.map((emp) => (
+                      <MenuItem key={emp.id} value={emp.empCode}>
+                        {emp.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </div>
+            )}
           </div>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: "32px", fontWeight: "700" }}>{presentDays}</div>
-            <div style={{ fontSize: "14px", opacity: 0.9 }}>Days Present</div>
-          </div>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: "32px", fontWeight: "700" }}>{absentDays}</div>
-            <div style={{ fontSize: "14px", opacity: 0.9 }}>Days Absent</div>
-          </div>
+
+          <button onClick={() => handleMonthChange(1)} style={buttonStyle}>
+            →
+          </button>
         </div>
-      </div>
+      )}
 
       <Calendar
         year={currentDate.getFullYear()}
         month={currentDate.getMonth()}
         events={events}
         mode="attendance"
-        //onDateClick={handleDateClick}
         darkTheme={false}
         today={today}
       />

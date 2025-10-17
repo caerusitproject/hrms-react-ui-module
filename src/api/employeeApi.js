@@ -93,9 +93,9 @@ export const EmployeeAPI = {
   },
 
   // ✅ Get subordinates of a manager
-  async getSubordinates(managerId) {
+  async getallSubordinates() {
     try {
-      const response = await axios.get(`${LOCAL_API}/employees/manager/${managerId}`, {
+      const response = await axios.get(`${LOCAL_API}/employees/manager`, {
         headers: getAuthHeaders(),
       });
       return response.data;
