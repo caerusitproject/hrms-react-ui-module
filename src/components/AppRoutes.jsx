@@ -2,7 +2,7 @@
 import React, { Suspense, lazy } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Outlet } from "react-router-dom";
-import {useTokenRefresh} from "../hooks/useTokenRefresh";
+import { useTokenRefresh } from "../hooks/useTokenRefresh";
 import { useAuth } from "../hooks/useAuth";
 import CustomLoader from "../components/common/CustomLoader";
 import EmployeeProfile from "../pages/profile/EmployeeProfile";
@@ -16,7 +16,7 @@ const Login = lazy(() => import("../pages/auth/Login"));
 const MainLayout = lazy(() => import("./layout/MainLayout"));
 const NotFoundPage = lazy(() => import("./common/NotFoundPage"));
 const ProtectedRoute = lazy(() => import("./auth/ProtectedRoute"));
-const AdminConfig= lazy(()=> import("../pages/admin/AdminConfigurationPage") )
+const AdminConfig = lazy(() => import("../pages/admin/AdminConfigurationPage"));
 // Lazy load pages
 const Home = lazy(() => import("../pages/home/Home"));
 const About = lazy(() => import("../pages/about/About"));
@@ -24,12 +24,12 @@ const Dashboard = lazy(() => import("../pages/dashboard/Dashboard"));
 const Attendance = lazy(() => import("../pages/leave-management/Attendance"));
 const Leave = lazy(() => import("../pages/leave-management/Leave"));
 const Broadcast = lazy(() => import("../pages/broadcast/Broadcast"));
+const Payroll = lazy(()=> import("../pages/payroll/Payroll"))
 const AppRoutes = () => {
- const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   useTokenRefresh();
   return (
     <div className="app">
-      
       <Suspense fallback={<CustomLoader />}>
         <Routes>
           {/* Root redirect to login */}
@@ -58,6 +58,16 @@ const AppRoutes = () => {
                 <Suspense fallback={<CustomLoader />}>
                   <Home />
                 </Suspense>
+              }
+            />
+            <Route
+              path="payroll"
+              element={
+                <ProtectedRoute requiredRoles={["ADMIN"]}>
+                  <Suspense fallback={<CustomLoader />}>
+                    <Payroll />
+                  </Suspense>
+                </ProtectedRoute>
               }
             />
             <Route
@@ -136,7 +146,7 @@ const AppRoutes = () => {
             <Route
               path="my-team"
               element={
-                <ProtectedRoute requiredRoles={[ "MANAGER"]}>
+                <ProtectedRoute requiredRoles={["MANAGER"]}>
                   <Suspense fallback={<CustomLoader />}>
                     <Teamemployee />
                   </Suspense>

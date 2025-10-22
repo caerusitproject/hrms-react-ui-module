@@ -9,6 +9,7 @@ import BeachAccessIcon from "@mui/icons-material/BeachAccess"; // Leave manageme
 import CampaignIcon from "@mui/icons-material/Campaign"; // Broadcast
 import ConfigIcon from "@mui/icons-material/Settings"; // Admin Config
 import GroupIcon from "@mui/icons-material/Group";
+import { Payment } from "@mui/icons-material";
  const user = JSON.parse(localStorage.getItem("user"));
 const userId = user?.id || 1; // fallback to 1 if not found
 export const menuItems = [
@@ -60,6 +61,13 @@ export const menuItems = [
     icon: GroupIcon,
     key: "my-team",
     requiredRoles: ["MANAGER"],
+  },
+   {
+    path: "/payroll",
+    label: "Payroll",
+    icon: Payment,
+    key: "payroll",
+    requiredRoles: ["ADMIN"],
   },
   {
     path: "/broadcast",
