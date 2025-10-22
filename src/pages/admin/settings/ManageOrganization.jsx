@@ -311,7 +311,6 @@ export default function ManageOrganization() {
               <StyledTabs value={activeTab} onChange={handleTabChange} variant="scrollable">
                 <StyledTab value="mail-templates" label="Mail Templates" />
                 <StyledTab value="departments" label="Departments" />
-                <StyledTab value="roles" label="Roles" />
                 <StyledTab value="designations" label="Designations" />
               </StyledTabs>
             </Grid>

@@ -75,11 +75,11 @@ export const menuItems = [
     key: "admin-config",
     requiredRoles: ["ADMIN"],
   },
-  {
-    path: "/about",
-    label: "About",
-    icon: InfoIcon,
-    key: "about",
-    requiredRoles: ["USER", "MANAGER", "HR", "ADMIN"],
-  },
+  // {
+  //   path: "/about",
+  //   label: "About",
+  //   icon: InfoIcon,
+  //   key: "about",
+  //   requiredRoles: ["USER", "MANAGER", "HR", "ADMIN"],
+  // },
 ];

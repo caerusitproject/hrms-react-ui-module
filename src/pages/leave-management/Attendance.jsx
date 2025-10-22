@@ -1,3 +1,4 @@
+// Updated Attendance.jsx
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import Calendar from "../../components/common/Calendar";
@@ -149,18 +150,6 @@ const Attendance = () => {
     whiteSpace: "nowrap",
   };
 
-  const buttonStyle = {
-    background: `${theme.colors.primary}`,
-    border: "2px solid white ",
-    color: "#fff",
-    padding: isMobile ? "8px 12px" : "8px 14px",
-    borderRadius: "6px",
-    cursor: "pointer",
-    fontSize: isMobile ? "10px" : "12px",
-    fontWeight: "bold",
-    transition: "0.3s",
-  };
-
   const headerCommonStyle = {
     width: "100%",
     marginBottom: "16px",
@@ -170,10 +159,20 @@ const Attendance = () => {
 
   const summaryBoxesStyle = {
     display: "flex",
-    gap: isMobile ? "6px" : "20px",
+    gap: isMobile ? "20px" : "25px",
     justifyContent: "center",
     flexWrap: "nowrap",
   };
+
+  const summariesContainerStyle = isMobile
+    ? {
+        width: "100%",
+        display: "flex",
+        gap: isMobile ? "20px" : "20px",
+        justifyContent: "center",
+        paddingBottom: "3px"
+      }
+    : summaryBoxesStyle;
 
   if (loading || employeesLoading) {
     return (
@@ -199,36 +198,78 @@ const Attendance = () => {
       >
         Attendance Calender
       </h1>
-      {isMobile ? (
-        // 📱 Mobile layout
-        <div
-          style={{
-            ...headerCommonStyle,
-            display: "flex",
-            flexDirection: "column",
-            padding: "4px 8px",
-            gap: "8px",
-            alignItems: "center",
-            marginTop: "15px"
-          }}
-        >
-          {/* <h2
+      <div
+        style={{
+          ...headerCommonStyle,
+          display: "flex",
+          flexDirection: isMobile ? "column" : "row",
+          justifyContent: isMobile ? "center" : "space-between",
+          alignItems: "center",
+          padding: isMobile ? "4px 8px" : "12px 16px",
+          gap: isMobile ? "8px" : "0",
+          marginTop: isMobile ? "15px" : "20px",
+          paddingTop : isMobile? "8px" : "10px",
+          paddingBottom: isMobile? "8px" : "10px",
+        }}
+      >
+        <div style={summariesContainerStyle}>
+          <div
             style={{
-              color: `${theme.colors.primary}`,
-              margin: 0,
-              fontSize: "23px",
-              textAlign: "center",
+              ...boxStyle,
+              backgroundColor: "transparent",
+               border: `${isMobile ? '1px' : '2px'} solid ${theme.colors.secondary}`,
+              borderRadius: isMobile ? "10px" : "8px",
+              padding: isMobile ? "6px 8px" : "8px 12px",
             }}
           >
-            Attendance Calendar
-          </h2> */}
+            {totalHours.toFixed(1)}
+            <div style={{ ...labelStyle, color: theme.colors.black }}>
+              Total Hours
+            </div>
+          </div>
+          <div
+            style={{
+              ...boxStyle,
+              backgroundColor: "transparent",
+              border: `${isMobile ? '1px' : '2px'} solid ${theme.colors.success}`,
+              borderRadius: isMobile ? "10px" : "8px",
+              padding: isMobile ? "6px 8px" : "8px 12px",
+            }}
+          >
+            {presentDays}
+            <div style={{ ...labelStyle, color: theme.colors.black }}>
+              Days Present
+            </div>
+          </div>
+          <div
+            style={{
+              ...boxStyle,
+              backgroundColor: "transparent",
+              border: `${isMobile ? '1px' : '2px'} solid ${theme.colors.error}`,
+              borderRadius: isMobile ? "10px" : "8px",
+              padding: isMobile ? "6px 8px" : "8px 12px",
+            }}
+          >
+            {absentDays}
+            <div style={{ ...labelStyle, color: theme.colors.black }}>
+              Days Absent
+            </div>
+          </div>
+        </div>
 
-          {canViewAll && employees.length > 0 && (
+        {canViewAll && employees.length > 0 && (
+          <div
+            style={{
+              width: isMobile ? "100%" : "auto",
+              display: "flex",
+              alignItems: "baseline",
+              justifyContent: isMobile ? "flex-end" : "center",
+              
+            }}
+          >
             <div
               style={{
                 width: isMobile ? "230px" : "350px",
-                marginBottom: "8px",
-                marginTop: "4px",
               }}
             >
               <FormControl fullWidth size="small">
@@ -308,252 +349,9 @@ const Attendance = () => {
                 </Select>
               </FormControl>
             </div>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              width: "100%",
-            }}
-          >
-            <button onClick={() => handleMonthChange(-1)} style={buttonStyle}>
-              ←
-            </button>
-
-            <div
-              style={{
-                ...summaryBoxesStyle,
-                flex: 1,
-                justifyContent: "center",
-              }}
-            >
-              <div
-                style={{
-                  ...boxStyle,
-                  backgroundColor: "transparent",
-                  border: `1px solid ${theme.colors.secondary}`,
-                  borderRadius: "10px",
-                  padding: "6px 8px",
-                }}
-              >
-                {totalHours.toFixed(1)}
-                <div style={{ ...labelStyle, color: theme.colors.black }}>
-                  Total Hours
-                </div>
-              </div>
-              <div
-                style={{
-                  ...boxStyle,
-                  backgroundColor: "transparent",
-                  border: `1px solid ${theme.colors.success}`,
-                  borderRadius: "10px",
-                  padding: "6px 8px",
-                }}
-              >
-                {presentDays}
-                <div style={{ ...labelStyle, color: theme.colors.black }}>
-                  Days Present
-                </div>
-              </div>
-              <div
-                style={{
-                  ...boxStyle,
-                  backgroundColor: "transparent",
-                  border: `1px solid ${theme.colors.error}`,
-                  borderRadius: "10px",
-                  padding: "6px 8px",
-                }}
-              >
-                {absentDays}
-                <div style={{ ...labelStyle, color: theme.colors.black }}>
-                  Days Absent
-                </div>
-              </div>
-            </div>
-
-            <button onClick={() => handleMonthChange(1)} style={buttonStyle}>
-              →
-            </button>
           </div>
-        </div>
-      ) : (
-        // 🖥 Desktop layout
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            ...headerCommonStyle,
-            padding: "12px 16px",
-            marginTop: "20px"
-          }}
-          className="header-container"
-        >
-          <button onClick={() => handleMonthChange(-1)} style={buttonStyle}>
-            ←
-          </button>
-
-          <div className="summary-boxes" style={summaryBoxesStyle}>
-            <div
-              style={{
-                ...boxStyle,
-                backgroundColor: "transparent",
-                border: `2px solid ${theme.colors.secondary}`,
-                borderRadius: "8px",
-                padding: "8px 12px",
-              }}
-            >
-              {totalHours.toFixed(1)}
-              <div style={{ ...labelStyle, color: theme.colors.black }}>
-                Total Hours
-              </div>
-            </div>
-            <div
-              style={{
-                ...boxStyle,
-                backgroundColor: "transparent",
-                border: `2px solid ${theme.colors.success}`,
-                borderRadius: "8px",
-                padding: "8px 12px",
-              }}
-            >
-              {presentDays}
-              <div style={{ ...labelStyle, color: theme.colors.black }}>
-                Days Present
-              </div>
-            </div>
-            <div
-              style={{
-                ...boxStyle,
-                backgroundColor: "transparent",
-                border: `2px solid ${theme.colors.error}`,
-                borderRadius: "8px",
-                padding: "8px 12px",
-              }}
-            >
-              {absentDays}
-              <div style={{ ...labelStyle, color: theme.colors.black }}>
-                Days Absent
-              </div>
-            </div>
-          </div>
-
-          <div
-            className="title-select-wrapper"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "60px",
-              marginRight: "10px",
-              // marginLeft: "20px",
-            }}
-          >
-            {/* <h2
-              style={{
-                color: `${theme.colors.primary}`,
-                margin: 0,
-                fontSize: "24px",
-              }}
-            >
-              Attendance Calendar
-            </h2> */}
-
-            {canViewAll && employees.length > 0 && (
-              <div
-                style={{
-                  width: "350px",
-                  // backgroundColor: "#fff",
-                  borderRadius: "6px",
-                  padding: "4px",
-                }}
-              >
-                <FormControl fullWidth size="small">
-                  <Select
-                    value={selectedEmpCode || ""}
-                    onChange={(e) => setSelectedEmpCode(e.target.value)}
-                    displayEmpty
-                    renderValue={(selected) => {
-                      // If nothing selected → show placeholder
-                      if (!selected) {
-                        return (
-                          <em
-                            style={{
-                              color: theme.colors.text.secondary,
-                              fontStyle: "italic",
-                            }}
-                          >
-                            Select Employee
-                          </em>
-                        );
-                      }
-
-                      // If user selects their own empCode → show placeholder instead of name
-                      const isOwn = selected === user?.empCode;
-                      if (isOwn) {
-                        return (
-                          <em
-                            style={{
-                              color: theme.colors.text.secondary,
-                              fontStyle: "italic",
-                            }}
-                          >
-                            Select Employee
-                          </em>
-                        );
-                      }
-
-                      // Otherwise show employee name or fallback to empCode
-                      const employeeName =
-                        employees.find((emp) => emp.empCode === selected)
-                          ?.name || selected;
-
-                      return employeeName;
-                    }}
-                    sx={{
-                      backgroundColor: "#fff", // white background
-                      borderRadius: "6px",
-                      fontSize: isMobile ? "12px" : "14px",
-                      "& .MuiOutlinedInput-notchedOutline": { border: "none" },
-                      "&:hover .MuiOutlinedInput-notchedOutline": {
-                        border: "none",
-                      },
-                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                        border: "none",
-                      },
-                      "& .MuiSelect-select": {
-                        padding: isMobile ? "6px 10px" : "8px 12px",
-                      },
-                    }}
-                  >
-                    <MenuItem value="" disabled>
-                      <em
-                        style={{
-                          fontStyle: "italic",
-                          color: theme.colors.text.secondary,
-                        }}
-                      >
-                        Select Employee
-                      </em>
-                    </MenuItem>
-
-                    {employees.map((emp) => (
-                      <MenuItem key={emp.id} value={emp.empCode}>
-                        {emp.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </div>
-            )}
-          </div>
-
-          <button onClick={() => handleMonthChange(1)} style={buttonStyle}>
-            →
-          </button>
-        </div>
-      )}
+        )}
+      </div>
 
       <Calendar
         year={currentDate.getFullYear()}
@@ -562,6 +360,20 @@ const Attendance = () => {
         mode="attendance"
         darkTheme={false}
         today={today}
+        onPrevMonth={() => handleMonthChange(-1)}
+        onNextMonth={() => handleMonthChange(1)}
+        isMobile={isMobile}
+        buttonStyle={{
+          background: `${theme.colors.primary}`,
+          border: "2px solid white",
+          color: "#fff",
+          padding: isMobile ? "8px 12px" : "8px 14px",
+          borderRadius: "6px",
+          cursor: "pointer",
+          fontSize: isMobile ? "10px" : "12px",
+          fontWeight: "bold",
+          transition: "0.3s",
+        }}
       />
     </div>
   );

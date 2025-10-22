@@ -6,7 +6,7 @@ import {useTokenRefresh} from "../hooks/useTokenRefresh";
 import { useAuth } from "../hooks/useAuth";
 import CustomLoader from "../components/common/CustomLoader";
 import EmployeeProfile from "../pages/profile/EmployeeProfile";
-import ManageOrganization from "../pages/admin/ManageOrganization";
+import ManageOrganization from "../pages/admin/settings/ManageOrganization";
 import EmployeeProfileEdit from "../pages/profile/EmployeeProfileEdit";
 import EmployeeProfileView from "../pages/profile/EmployeeProfileView";
 import EmployeeList from "../pages/profile/EmployeeList";
@@ -16,7 +16,7 @@ const Login = lazy(() => import("../pages/auth/Login"));
 const MainLayout = lazy(() => import("./layout/MainLayout"));
 const NotFoundPage = lazy(() => import("./common/NotFoundPage"));
 const ProtectedRoute = lazy(() => import("./auth/ProtectedRoute"));
-
+const AdminConfig= lazy(()=> import("../pages/admin/AdminConfigurationPage") )
 // Lazy load pages
 const Home = lazy(() => import("../pages/home/Home"));
 const About = lazy(() => import("../pages/about/About"));
@@ -118,7 +118,7 @@ const AppRoutes = () => {
               element={
                 <ProtectedRoute requiredRoles={["ADMIN"]}>
                   <Suspense fallback={<CustomLoader />}>
-                    <ManageOrganization />
+                    <AdminConfig />
                   </Suspense>
                 </ProtectedRoute>
               }

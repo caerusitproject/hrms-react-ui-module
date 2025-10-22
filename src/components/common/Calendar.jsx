@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect } from "react";
 
 const Calendar = ({
@@ -16,6 +14,10 @@ const Calendar = ({
   today,
   onEdgeHover,
   onDateClick,
+  onPrevMonth,
+  onNextMonth,
+  isMobile: parentIsMobile,
+  buttonStyle: parentButtonStyle,
 }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [isTouching, setIsTouching] = useState(false);
@@ -28,6 +30,19 @@ const Calendar = ({
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
+  const effectiveIsMobile = parentIsMobile !== undefined ? parentIsMobile : isMobile;
+  const effectiveButtonStyle = parentButtonStyle || {
+    background: "#1976d2",
+    border: "2px solid white",
+    color: "#fff",
+    padding: effectiveIsMobile ? "8px 12px" : "8px 14px",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontSize: effectiveIsMobile ? "10px" : "12px",
+    fontWeight: "bold",
+    transition: "0.3s",
+  };
 
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDay = new Date(year, month, 1).getDay();
@@ -239,44 +254,68 @@ const Calendar = ({
     <div
       style={{
         background: darkTheme ? "#1a1a1a" : "#fff",
-        padding: isMobile ? "15px 8px" : "60px",
-        borderRadius: isMobile ? "8px" : "12px",
-        boxShadow: isMobile
+        padding: effectiveIsMobile ? "15px 8px" : "20px",
+        borderRadius: effectiveIsMobile ? "8px" : "12px",
+        boxShadow: effectiveIsMobile
           ? "0 2px 8px rgba(0, 0, 0, 0.1)"
           : "0 4px 12px rgba(0, 0, 0, 0.1)",
         width: "100%",
         margin: "0 auto",
-        height: isMobile ? "auto" : "80vh",
-        minHeight: isMobile ? "450px" : "auto",
+        height: effectiveIsMobile ? "auto" : "80vh",
+        minHeight: effectiveIsMobile ? "auto" : "auto",
         position: "relative",
       }}
     >
-      <h3
+      <div
         style={{
-          textAlign: "center",
-          color: darkTheme ? "#fff" : "#333",
-          marginBottom: isMobile ? "12px" : "20px",
-          fontSize: isMobile ? "16px" : "22px",
-          fontWeight: "600",
-          textTransform: "uppercase",
-          letterSpacing: isMobile ? "0.5px" : "1px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: effectiveIsMobile ? "12px" : "20px",
         }}
       >
-        {monthName} {year}
-      </h3>
+        <button
+          onClick={onPrevMonth}
+          style={effectiveButtonStyle}
+          disabled={!onPrevMonth}
+        >
+          ←
+        </button>
+        <h3
+          style={{
+            textAlign: "center",
+            color: darkTheme ? "#fff" : "#333",
+            margin: 0,
+            flex: 1,
+            fontSize: effectiveIsMobile ? "16px" : "22px",
+            fontWeight: "600",
+            textTransform: "uppercase",
+            letterSpacing: effectiveIsMobile ? "0.5px" : "1px",
+          }}
+        >
+          {monthName} {year}
+        </h3>
+        <button
+          onClick={onNextMonth}
+          style={effectiveButtonStyle}
+          disabled={!onNextMonth}
+        >
+          →
+        </button>
+      </div>
 
       <div
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(7, 1fr)",
-          gap: isMobile ? "1px" : "2px",
+          gap: effectiveIsMobile ? "1px" : "2px",
           border: "1px solid #e0e0e0",
-          borderRadius: isMobile ? "6px" : "8px",
-          height: isMobile ? "auto" : "calc(100% - 60px)",
+          borderRadius: effectiveIsMobile ? "6px" : "8px",
+          height: effectiveIsMobile ? "auto" : "calc(100% - 60px)",
           overflow: "hidden",
         }}
-        onTouchMove={isMobile ? handleTouchMove : null}
-        onTouchEnd={isMobile ? handleTouchEnd : null}
+        onTouchMove={effectiveIsMobile ? handleTouchMove : null}
+        onTouchEnd={effectiveIsMobile ? handleTouchEnd : null}
       >
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((header) => (
           <div
@@ -286,13 +325,13 @@ const Calendar = ({
               fontWeight: "600",
               color: darkTheme ? "#bbb" : "#444",
               textAlign: "center",
-              padding: isMobile ? "6px 2px" : "10px",
-              fontSize: isMobile ? "10px" : "14px",
+              padding: effectiveIsMobile ? "6px 2px" : "10px",
+              fontSize: effectiveIsMobile ? "10px" : "14px",
               borderBottom: "1px solid #ddd",
               textTransform: "uppercase",
             }}
           >
-            {isMobile ? header.slice(0, 1) : header}
+            {effectiveIsMobile ? header.slice(0, 1) : header}
           </div>
         ))}
 
@@ -306,8 +345,8 @@ const Calendar = ({
               data-ispast={dayInfo?.isPast}
               data-daynum={dayInfo?.day}
               style={{
-                minHeight: isMobile ? "45px" : "60px",
-                padding: isMobile ? "4px" : "8px",
+                minHeight: effectiveIsMobile ? "45px" : "60px",
+                padding: effectiveIsMobile ? "4px" : "8px",
                 borderRadius: "0",
                 cursor:
                   dayInfo && mode === "attendance" ? "pointer" : "default",
@@ -317,7 +356,7 @@ const Calendar = ({
                 justifyContent: "space-between",
                 alignItems: "flex-start",
                 position: "relative",
-                touchAction: isMobile && dayInfo ? "none" : "auto",
+                touchAction: effectiveIsMobile && dayInfo ? "none" : "auto",
                 ...cellStyle,
               }}
               onMouseEnter={(e) => {
@@ -328,14 +367,19 @@ const Calendar = ({
                 const tooltip = e.currentTarget.querySelector(".tooltip");
                 if (tooltip) tooltip.style.opacity = 0;
               }}
+              onClick={() => dayInfo && handleClick(dayInfo.dateStr, dayInfo.isPast)}
+              onMouseEnter={() =>
+                dayInfo && handleMouseEnter(dayInfo.dateStr, dayInfo.isPast, dayInfo.day)
+              }
+              onTouchStart={() => dayInfo && handleTouchStart(dayInfo.dateStr, dayInfo.isPast)}
             >
               {dayInfo && (
                 <>
                   <div
                     style={{
-                      fontSize: isMobile ? "12px" : "16px",
+                      fontSize: effectiveIsMobile ? "12px" : "16px",
                       fontWeight: "500",
-                      marginBottom: isMobile ? "2px" : "4px",
+                      marginBottom: effectiveIsMobile ? "2px" : "4px",
                       color: cellStyle.color,
                     }}
                   >
@@ -346,8 +390,8 @@ const Calendar = ({
                     <>
                       <div
                         style={{
-                          fontSize: isMobile ? "9px" : "11px",
-                          padding: isMobile ? "1px 2px" : "2px 4px",
+                          fontSize: effectiveIsMobile ? "9px" : "11px",
+                          padding: effectiveIsMobile ? "1px 2px" : "2px 4px",
                           borderRadius: "4px",
                           color: cellStyle.color,
                           textAlign: "left",
