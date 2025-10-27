@@ -125,9 +125,9 @@ const AppRoutes = () => {
               }
             />
             <Route
-              path="admin-config"
+              path="email-templetes"
               element={
-                <ProtectedRoute requiredRoles={["ADMIN"]}>
+                <ProtectedRoute requiredRoles={["ADMIN", "HR"]}>
                   <Suspense fallback={<CustomLoader />}>
                     <EmailTemplateManager />
                   </Suspense>

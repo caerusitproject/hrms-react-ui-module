@@ -61,6 +61,7 @@ export default function EmailTemplateManager() {
   const [isMobile, setIsMobile] = useState(false);
   const subjectRef = useRef(null);
   const [editorInstance, setEditorInstance] = useState(null);
+  const [focusedField, setFocusedField] = useState('body'); // Track focused field
   const { user } = useAuth();
   const navigate = useNavigate();
   const userRole = user?.role || "USER"; // default to USER if undefined
@@ -209,24 +210,26 @@ export default function EmailTemplateManager() {
     setSendMailOpen(false);
   };
 
-  const insertVariableToSubject = (variable) => {
-    const input = subjectRef.current?.querySelector("input");
-    if (input) {
-      const start = input.selectionStart;
-      const end = input.selectionEnd;
-      const value = input.value;
-      const newValue =
-        value.substring(0, start) + variable + value.substring(end);
-      setFormData({ ...formData, subject: newValue });
-      setTimeout(() => {
-        input.selectionStart = input.selectionEnd = start + variable.length;
-        input.focus();
-      }, 0);
-    }
-  };
+  // Combined insert function that works for both subject and body
+  const insertVariable = (variable) => {
+    if (focusedField === 'subject') {
+      const input = subjectRef.current;
+      if (input) {
+        const start = input.selectionStart || 0;
+        const end = input.selectionEnd || 0;
+        const value = formData.subject;
+        const newValue =
+          value.substring(0, start) + variable + value.substring(end);
+        
+        setFormData({ ...formData, subject: newValue });
 
-  const insertVariableToEditor = (variable) => {
-    if (editorInstance) {
+        requestAnimationFrame(() => {
+          const newPosition = start + variable.length;
+          input.focus();
+          input.setSelectionRange(newPosition, newPosition);
+        });
+      }
+    } else if (focusedField === 'body' && editorInstance) {
       editorInstance.model.change((writer) => {
         const selection = editorInstance.model.document.selection;
         if (selection.isCollapsed) {
@@ -237,58 +240,50 @@ export default function EmailTemplateManager() {
           writer.insertText(variable, range.start);
         }
       });
+      editorInstance.editing.view.focus();
     }
   };
 
- const renderVariablesBox = () => (
-  <Paper
-    sx={{
-      p: 2,
-      mt: 2,
-      mb: 2,
-      borderRadius: customTheme.borderRadius.medium,
-      background: customTheme.colors.background,
-      border: `1px solid ${customTheme.colors.lightGray}`,
-    }}
-    elevation={0}
-  >
-    <Typography variant="subtitle2" gutterBottom fontWeight={500}>
-      Predefined Variables
-    </Typography>
-    <Grid container spacing={1}>
-      {predefinedVariables.map((varItem) => (
-        <Grid item key={varItem.key}>
-          <Chip
-            label={varItem.label}
-            size="small"
-            onClick={() => {
-              insertVariableToSubject(varItem.label);
-              insertVariableToEditor(varItem.label);
-            }}
-            clickable
-            sx={{
-              cursor: "pointer",
-              backgroundColor: `${customTheme.colors.primaryLight}34`,
-              color: customTheme.colors.primaryDark,
-              "&:hover": {
-                backgroundColor: customTheme.colors.gray,
-              },
-            }}
-          />
-        </Grid>
-      ))}
-    </Grid>
-  </Paper>
-);
+  const renderVariablesBox = () => (
+    <Paper
+      sx={{
+        p: 2,
+        mt: 2,
+        mb: 2,
+        borderRadius: customTheme.borderRadius.medium,
+        background: customTheme.colors.background,
+        border: `1px solid ${customTheme.colors.lightGray}`,
+      }}
+      elevation={0}
+    >
+      <Typography variant="subtitle2" gutterBottom fontWeight={500}>
+        Predefined Variables
+      </Typography>
+      <Grid container spacing={1}>
+        {predefinedVariables.map((varItem) => (
+          <Grid item key={varItem.key}>
+            <Chip
+              label={varItem.label}
+              size="small"
+              onClick={() => insertVariable(varItem.label)}
+              clickable
+              sx={{
+                cursor: "pointer",
+                backgroundColor: `${customTheme.colors.primaryLight}34`,
+                color: customTheme.colors.primaryDark,
+                "&:hover": {
+                  backgroundColor: customTheme.colors.gray,
+                },
+              }}
+            />
+          </Grid>
+        ))}
+      </Grid>
+    </Paper>
+  );
 
   return (
-    <div
-    // sx={{
-    //   padding: customTheme.spacing.lg,
-    //   backgroundColor: customTheme.colors.background,
-    //   minHeight: "100vh",
-    // }}
-    >
+    <div>
       {/* Header */}
       <Box
         sx={{
@@ -306,7 +301,7 @@ export default function EmailTemplateManager() {
             fontWeight: 700,
             color: customTheme.colors.text.primary,
             margin: 0,
-            flex: 1, // allows heading to shrink if needed
+            flex: 1,
           }}
         >
           Email Templates
@@ -356,14 +351,11 @@ export default function EmailTemplateManager() {
               <TableCell
                 align="right"
                 sx={{
-                  textAlign: { xs: "center", sm: "right" }, // ✅ xs = mobile, sm+ = desktop
+                  textAlign: { xs: "center", sm: "right" },
                 }}
               >
                 <b>Actions</b>
               </TableCell>
-              {/* <TableCell align="center">
-                <b>Send Mail</b>
-              </TableCell> */}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -439,15 +431,6 @@ export default function EmailTemplateManager() {
                     )}
                   </Box>
                 </TableCell>
-                {/* <TableCell align="center">
-                  <IconButton
-                    sx={{ color: customTheme.colors.primary }}
-                    onClick={() => handleSendMail(template)}
-                    size="small"
-                  >
-                    <Send fontSize="small" />
-                  </IconButton>
-                </TableCell> */}
               </TableRow>
             ))}
           </TableBody>
@@ -484,13 +467,14 @@ export default function EmailTemplateManager() {
             onChange={(e) =>
               setFormData({ ...formData, subject: e.target.value })
             }
+            onFocus={() => setFocusedField('subject')}
             margin="normal"
             variant="outlined"
             sx={{ mb: 2 }}
           />
           {renderVariablesBox()}
           <Typography variant="subtitle1" mt={2} mb={1} fontWeight={500}>
-            Body (Supports HTML)
+            Body
           </Typography>
           <Box
             sx={{
@@ -508,6 +492,10 @@ export default function EmailTemplateManager() {
               }}
               onReady={(editor) => {
                 setEditorInstance(editor);
+                // Set focus listener on editor
+                editor.editing.view.document.on('focus', () => {
+                  setFocusedField('body');
+                });
               }}
               config={{
                 toolbar: [
@@ -648,6 +636,71 @@ export default function EmailTemplateManager() {
             )}
           </Grid>
 
+          {/* Attachments Section */}
+          <Typography variant="subtitle1" mt={3} mb={1} fontWeight={500}>
+            Attachments
+          </Typography>
+
+          <Button
+            type="secondary"
+            onClick={() => document.getElementById("attachmentInput").click()}
+            sx={{
+              borderColor: customTheme.colors.primary,
+              color: customTheme.colors.primary,
+              textTransform: "none",
+              fontWeight: 500,
+              mb: 2,
+            }}
+          >
+            Upload Files
+          </Button>
+
+          <input
+            id="attachmentInput"
+            type="file"
+            hidden
+            multiple
+            onChange={(e) => {
+              const uploadedFiles = Array.from(e.target.files);
+              setMailForm((prev) => ({
+                ...prev,
+                attachments: [...(prev.attachments || []), ...uploadedFiles],
+              }));
+              e.target.value = null; // reset input
+            }}
+          />
+
+          {mailForm.attachments?.length > 0 && (
+            <Box
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 1,
+                mt: 1,
+              }}
+            >
+              {mailForm.attachments.map((file, idx) => (
+                <Chip
+                  key={idx}
+                  label={file.name}
+                  onDelete={() =>
+                    setMailForm((prev) => ({
+                      ...prev,
+                      attachments: prev.attachments.filter((_, i) => i !== idx),
+                    }))
+                  }
+                  sx={{
+                    backgroundColor: `${customTheme.colors.primaryLight}34`,
+                    color: customTheme.colors.primaryDark,
+                    "& .MuiChip-deleteIcon": {
+                      color: customTheme.colors.error,
+                    },
+                  }}
+                />
+              ))}
+            </Box>
+          )}
+
           <Typography variant="subtitle1" mt={3} mb={1} fontWeight={500}>
             Email Preview
           </Typography>
@@ -661,10 +714,9 @@ export default function EmailTemplateManager() {
             }}
             elevation={0}
           >
-              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>
-                Subject : {previewSubject}
-              </Typography>
-    
+            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>
+              Subject : {previewSubject}
+            </Typography>
           </Paper>
 
           <Paper
