@@ -66,8 +66,10 @@ export const PayrollApi = {
   async getAllEmployees() {
     try {
       // simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
-     return dummyEmployees;
+     const response = await axios.get(`${LOCAL_API}/payrolls/employee-list`, { 
+      headers: getAuthHeaders(), 
+    }); 
+     return response.data;
     } catch (error) {
       console.error("Error fetching employees (mock):", error.message);
       return {
