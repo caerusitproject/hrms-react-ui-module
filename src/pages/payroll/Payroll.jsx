@@ -155,7 +155,7 @@ const Payroll = () => {
       employeeId: selectedEmployee,
     };
     try {
-      await PayrollApi.createpayroll(payload);
+      await PayrollApi.craetepayroll(payload);
       setFormData(initialFormData);
       setSelectedEmployee("");
       const updatedPayrolls = await PayrollApi.getallPayroll();

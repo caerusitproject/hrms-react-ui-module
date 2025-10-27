@@ -25,6 +25,7 @@ const Attendance = lazy(() => import("../pages/leave-management/Attendance"));
 const Leave = lazy(() => import("../pages/leave-management/Leave"));
 const Broadcast = lazy(() => import("../pages/broadcast/Broadcast"));
 const Payroll = lazy(()=> import("../pages/payroll/Payroll"))
+const EmailTemplateManager = lazy(()=> import("../pages/email-templete/EmailTemplateManager"))
 const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
   useTokenRefresh();
@@ -128,7 +129,7 @@ const AppRoutes = () => {
               element={
                 <ProtectedRoute requiredRoles={["ADMIN"]}>
                   <Suspense fallback={<CustomLoader />}>
-                    <AdminConfig />
+                    <EmailTemplateManager />
                   </Suspense>
                 </ProtectedRoute>
               }

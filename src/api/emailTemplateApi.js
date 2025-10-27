@@ -69,7 +69,7 @@ export const EmailTemplateAPI = {
   // 🔹 Get all template types
   async getAllTemplateTypes() {
     try {
-      const response = await axios.get(`${LOCAL_API}/email/alltypes`, {
+      const response = await axios.get(`${LOCAL_API}/email/all`, {
         headers: getAuthHeaders(),
       });
       return response.data;

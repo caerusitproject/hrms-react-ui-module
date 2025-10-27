@@ -51,7 +51,7 @@ export const PayrollApi = {
   },
   async craetepayroll(payload) {
     try {
-      const response = await axios.patch(`${LOCAL_API}/compensations`, payload, {
+      const response = await axios.post(`${LOCAL_API}/compensations`, payload, {
         headers: getAuthHeaders(),
       });
       return response.data;
