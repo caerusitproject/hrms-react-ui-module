@@ -31,10 +31,11 @@ const predefinedVariables = [
   { key: "name", label: "{{name}}" },
   { key: "empCode", label: "{{empCode}}" },
   { key: "email", label: "{{email}}" },
-  { key: "employeeName", label: "{{employeeName}}" },
+  { key: "designation", label: "{{designation}}" },
   { key: "company", label: "{{company}}" },
   { key: "date", label: "{{date}}" },
-  { key: "position", label: "{{position}}" },
+ // { key: "idNumber", label: "{{idNumber}}" },
+ { key: "idNumber", label: "{{idNumber}}" },
 ];
 
 export default function EmailTemplateManager() {
@@ -61,7 +62,7 @@ export default function EmailTemplateManager() {
   const [isMobile, setIsMobile] = useState(false);
   const subjectRef = useRef(null);
   const [editorInstance, setEditorInstance] = useState(null);
-  const [focusedField, setFocusedField] = useState('body'); // Track focused field
+  const [focusedField, setFocusedField] = useState("body"); // Track focused field
   const { user } = useAuth();
   const navigate = useNavigate();
   const userRole = user?.role || "USER"; // default to USER if undefined
@@ -199,20 +200,71 @@ export default function EmailTemplateManager() {
     setSendMailOpen(true);
   };
 
-  const handleMailSubmit = () => {
-    console.log("Sending Mail Payload:", {
-      to: mailForm.to,
-      subject: selectedTemplate.subject,
-      body: selectedTemplate.body,
-      variables: mailForm.variables,
+  const handleMailSubmit = async () => {
+    // Replace variables in subject and body with actual values
+    let finalSubject = selectedTemplate.subject;
+    let finalBody = selectedTemplate.body;
+
+    Object.keys(mailForm.variables).forEach((key) => {
+      const placeholder = `{{${key}}}`;
+      const replacement = mailForm.variables[key] || placeholder;
+      finalSubject = finalSubject.replace(
+        new RegExp(placeholder, "g"),
+        replacement
+      );
+      finalBody = finalBody.replace(new RegExp(placeholder, "g"), replacement);
     });
-    //alert("Mail sent successfully (dummy API)");
-    setSendMailOpen(false);
+
+    // Prepare attachments for upload (convert File objects to base64 or FormData)
+    const attachments = [];
+    if (mailForm.attachments && mailForm.attachments.length > 0) {
+      for (const file of mailForm.attachments) {
+        // Option 1: Convert to base64
+        const base64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result.split(",")[1]); // Remove data:mime;base64, prefix
+          reader.readAsDataURL(file);
+        });
+
+        attachments.push({
+          filename: file.name,
+          content: base64,
+          contentType: file.type,
+          size: file.size,
+        });
+      }
+    }
+
+    // Create the final payload
+    const payload = {
+      to: mailForm.to,
+      subject: finalSubject,
+      body: finalBody,
+      isHtml: true,
+      variables: mailForm.variables, // Keep original variables for reference
+      attachments: attachments,
+      templateId: selectedTemplate.id,
+      templateType: selectedTemplate.type,
+    };
+
+    console.log("Sending Mail Payload:", payload);
+
+    try {
+      // TODO: Replace with your actual API call
+      // const response = await EmailTemplateAPI.sendEmail(payload);
+      // alert("Email sent successfully!");
+
+      alert("Email payload ready! Check console for details.");
+      setSendMailOpen(false);
+    } catch (error) {
+      console.error("Error sending email:", error);
+      alert("Failed to send email. Please try again.");
+    }
   };
 
   // Combined insert function that works for both subject and body
   const insertVariable = (variable) => {
-    if (focusedField === 'subject') {
+    if (focusedField === "subject") {
       const input = subjectRef.current;
       if (input) {
         const start = input.selectionStart || 0;
@@ -220,7 +272,7 @@ export default function EmailTemplateManager() {
         const value = formData.subject;
         const newValue =
           value.substring(0, start) + variable + value.substring(end);
-        
+
         setFormData({ ...formData, subject: newValue });
 
         requestAnimationFrame(() => {
@@ -229,7 +281,7 @@ export default function EmailTemplateManager() {
           input.setSelectionRange(newPosition, newPosition);
         });
       }
-    } else if (focusedField === 'body' && editorInstance) {
+    } else if (focusedField === "body" && editorInstance) {
       editorInstance.model.change((writer) => {
         const selection = editorInstance.model.document.selection;
         if (selection.isCollapsed) {
@@ -467,7 +519,7 @@ export default function EmailTemplateManager() {
             onChange={(e) =>
               setFormData({ ...formData, subject: e.target.value })
             }
-            onFocus={() => setFocusedField('subject')}
+            onFocus={() => setFocusedField("subject")}
             margin="normal"
             variant="outlined"
             sx={{ mb: 2 }}
@@ -493,8 +545,8 @@ export default function EmailTemplateManager() {
               onReady={(editor) => {
                 setEditorInstance(editor);
                 // Set focus listener on editor
-                editor.editing.view.document.on('focus', () => {
-                  setFocusedField('body');
+                editor.editing.view.document.on("focus", () => {
+                  setFocusedField("body");
                 });
               }}
               config={{
@@ -547,7 +599,7 @@ export default function EmailTemplateManager() {
           {selectedTemplate ? (
             <Box>
               <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500 }}>
-                Subject: {selectedTemplate.subject}
+                <strong>Subject:</strong> {selectedTemplate.subject}
               </Typography>
               <Paper
                 sx={{
@@ -589,7 +641,7 @@ export default function EmailTemplateManager() {
         fullWidth
         maxWidth="md"
       >
-        <DialogTitle sx={{ pb: 2 }}>Send Email</DialogTitle>
+        <DialogTitle sx={{ pb: 2, fontWeight: 700 }}>Send Email</DialogTitle>
         <DialogContent dividers sx={{ p: 3 }}>
           <TextField
             fullWidth
@@ -701,7 +753,7 @@ export default function EmailTemplateManager() {
             </Box>
           )}
 
-          <Typography variant="subtitle1" mt={3} mb={1} fontWeight={500}>
+          <Typography variant="subtitle1" mt={3} mb={1} fontWeight={700}>
             Email Preview
           </Typography>
           <Paper
@@ -715,7 +767,7 @@ export default function EmailTemplateManager() {
             elevation={0}
           >
             <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>
-              Subject : {previewSubject}
+              <strong>Subject:</strong> {previewSubject}
             </Typography>
           </Paper>
 

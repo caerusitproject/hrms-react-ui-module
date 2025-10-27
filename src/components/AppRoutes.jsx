@@ -6,7 +6,6 @@ import { useTokenRefresh } from "../hooks/useTokenRefresh";
 import { useAuth } from "../hooks/useAuth";
 import CustomLoader from "../components/common/CustomLoader";
 import EmployeeProfile from "../pages/profile/EmployeeProfile";
-import ManageOrganization from "../pages/admin/settings/ManageOrganization";
 import EmployeeProfileEdit from "../pages/profile/EmployeeProfileEdit";
 import EmployeeProfileView from "../pages/profile/EmployeeProfileView";
 import EmployeeList from "../pages/profile/EmployeeList";
@@ -26,6 +25,8 @@ const Leave = lazy(() => import("../pages/leave-management/Leave"));
 const Broadcast = lazy(() => import("../pages/broadcast/Broadcast"));
 const Payroll = lazy(()=> import("../pages/payroll/Payroll"))
 const EmailTemplateManager = lazy(()=> import("../pages/email-templete/EmailTemplateManager"))
+const SendMailPage =  lazy(()=> import("../pages/email-templete/SendMailPage"))
+
 const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
   useTokenRefresh();
@@ -127,9 +128,29 @@ const AppRoutes = () => {
             <Route
               path="email-templetes"
               element={
-                <ProtectedRoute requiredRoles={["ADMIN", "HR"]}>
+                <ProtectedRoute requiredRoles={["ADMIN"]}>
                   <Suspense fallback={<CustomLoader />}>
                     <EmailTemplateManager />
+                  </Suspense>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="email-process"
+              element={
+                <ProtectedRoute requiredRoles={["HR"]}>
+                  <Suspense fallback={<CustomLoader />}>
+                    <SendMailPage />
+                  </Suspense>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="admin-config"
+              element={
+                <ProtectedRoute requiredRoles={["ADMIN", "HR"]}>
+                  <Suspense fallback={<CustomLoader />}>
+                    <AdminConfig />
                   </Suspense>
                 </ProtectedRoute>
               }

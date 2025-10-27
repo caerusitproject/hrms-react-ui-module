@@ -7,7 +7,8 @@ import { COMPANY_INFO } from "../../utils/constants";
 import { menuItems } from "./menuItems"; // Import from separate file
 import CompanyLogo from "../../assets/caerus-logo.png";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
-import { Modal, Box, Button, Typography } from "@mui/material"; // Adjust import if not using MUI
+import { Modal, Box, Typography } from "@mui/material";
+import Button from "../common/Button";
 
 const SideNav = ({ collapsed, onToggle }) => {
   const navigate = useNavigate();
@@ -31,14 +32,14 @@ const SideNav = ({ collapsed, onToggle }) => {
   }, []);
 
   const handleLogout = () => {
-  setShowLogoutModal(true);
-};
+    setShowLogoutModal(true);
+  };
 
-const confirmLogout = () => {
-  logout();
-  navigate("/login");
-  setShowLogoutModal(false);
-};
+  const confirmLogout = () => {
+    logout();
+    navigate("/login");
+    setShowLogoutModal(false);
+  };
 
   // Updated handleNavigation: For profile, always use current user ID
   const handleNavigation = (path, itemKey) => {
@@ -372,37 +373,52 @@ const confirmLogout = () => {
           </div>
         }
         <Modal
-  open={showLogoutModal}
-  onClose={() => setShowLogoutModal(false)}
-  aria-labelledby="logout-modal-title"
-  style={{ display: "flex", alignItems: "center", justifyContent: "center" }}
->
-  <Box
-    sx={{
-      backgroundColor: "white",
-      padding: 4,
-      borderRadius: 2,
-      boxShadow: 24,
-      maxWidth: 400,
-      textAlign: "center",
-    }}
-  >
-    <Typography id="logout-modal-title" variant="h6" gutterBottom>
-      Confirm Logout
-    </Typography>
-    <Typography variant="body1" gutterBottom>
-      Are you sure you want to logout?
-    </Typography>
-    <Box sx={{ display: "flex", justifyContent: "center", gap: 2, mt: 3 }}>
-      <Button variant="outlined" onClick={() => setShowLogoutModal(false)}>
-        Cancel
-      </Button>
-      <Button variant="contained" color="error" onClick={confirmLogout}>
-        Logout
-      </Button>
-    </Box>
-  </Box>
-</Modal>
+          open={showLogoutModal}
+          onClose={() => setShowLogoutModal(false)}
+          aria-labelledby="logout-modal-title"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Box
+            sx={{
+              backgroundColor: "white",
+              padding: 4,
+              borderRadius: 2,
+              boxShadow: 24,
+              maxWidth: 400,
+              textAlign: "center",
+            }}
+          >
+            <Typography
+              id="logout-modal-title"
+              variant="subtitle1"
+              sx={{ fontWeight: 700, fontSize: "1.3rem" }} // ✅ slightly smaller + bold
+              gutterBottom
+            >
+              Confirm Logout
+            </Typography>
+
+            <Typography variant="body1" gutterBottom>
+              Are you sure you want to logout?
+            </Typography>
+            <Box
+              sx={{ display: "flex", justifyContent: "center", gap: 2, mt: 3 }}
+            >
+              <Button
+                type="secondery"
+                onClick={() => setShowLogoutModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button variant="contained" onClick={confirmLogout}>
+                Logout
+              </Button>
+            </Box>
+          </Box>
+        </Modal>
       </div>
     </>
   );

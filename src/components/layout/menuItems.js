@@ -83,7 +83,14 @@ export const menuItems = [
     label: "Email Templates",
     icon: EmailOutlinedIcon,
     key: "email-templates",
-    requiredRoles: ["ADMIN", "HR"], // optional, if HR can view
+    requiredRoles: ["ADMIN"], // optional, if HR can view
+  },
+  {
+    path: "/email-process",
+    label: "Email Process",
+    icon: EmailOutlinedIcon,
+    key: "email-process",
+    requiredRoles: ["HR"], // optional, if HR can view
   },
   {
     path: "/admin-config",
