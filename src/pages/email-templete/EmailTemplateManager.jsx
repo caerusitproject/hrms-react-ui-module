@@ -254,7 +254,7 @@ export default function EmailTemplateManager() {
       // const response = await EmailTemplateAPI.sendEmail(payload);
       // alert("Email sent successfully!");
 
-      alert("Email payload ready! Check console for details.");
+     // alert("Email payload ready! Check console for details.");
       setSendMailOpen(false);
     } catch (error) {
       console.error("Error sending email:", error);
@@ -465,13 +465,13 @@ export default function EmailTemplateManager() {
                         <Edit fontSize="small" />
                       </IconButton>
                     )}
-                    <IconButton
+                    {/* <IconButton
                       sx={{ color: customTheme.colors.primary }}
                       onClick={() => handleSendMail(template)}
                       size="small"
                     >
                       <Send fontSize="small" />
-                    </IconButton>
+                    </IconButton> */}
                     {userRole === "ADMIN" && (
                       <IconButton
                         sx={{ mr: 0, color: customTheme.colors.error }}

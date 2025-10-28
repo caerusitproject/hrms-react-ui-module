@@ -1,69 +1,99 @@
-import React, { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
-import { useAuth } from "../../hooks/useAuth";
-import { theme } from "../../theme/theme";
-import { useNavigate } from "react-router-dom";
-import CompanyLogo from "../../assets/caerus-logo.png"; // Adjust path to your logo
+"use client"
+
+import { useState, useEffect } from "react"
+import { useSelector } from "react-redux"
+import { useAuth } from "../../hooks/useAuth"
+import { theme } from "../../theme/theme"
+import { useNavigate } from "react-router-dom"
+import CompanyLogo from "../../assets/caerus-logo.png"
+import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
+import MailOutlineIcon from "@mui/icons-material/MailOutline";
+import Groups2OutlinedIcon from "@mui/icons-material/Groups2Outlined";
+import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
+
 
 const Home = () => {
-  const { user, isAuthenticated } = useAuth();
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const reduxAuthState = useSelector((state) => state.auth);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth()
+  const [currentTime, setCurrentTime] = useState(new Date())
+  const reduxAuthState = useSelector((state) => state.auth)
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+  const [hoveredButton, setHoveredButton] = useState(null)
+  const navigate = useNavigate()
+  const role = user?.role || "USER"
+
+ const quickActions = [
+  {
+    label: "View Profile",
+    path: "/employee-profile",
+    icon: <PersonOutlineIcon />,
+    roles: ["ADMIN", "HR", "MANAGER", "USER"],
+  },
+  {
+    label: "View Employees",
+    path: "/employees-list",
+    icon: <GroupOutlinedIcon />,
+    roles: ["ADMIN", "HR"],
+  },
+  {
+    label: "Send Email",
+    path: "/email-process",
+    icon: <MailOutlineIcon />,
+    roles: ["ADMIN", "HR"],
+  },
+  {
+    label: "My Team",
+    path: "/my-team",
+    icon: <Groups2OutlinedIcon />,
+    roles: ["MANAGER"],
+  },
+  {
+    label: "Dashboard",
+    path: "/dashboard",
+    icon: <DashboardOutlinedIcon />,
+    roles: ["ADMIN", "HR", "MANAGER", "USER"],
+    featured: true,
+  },
+];
+
+
+  const visibleActions = quickActions.filter((action) => action.roles.includes(user?.role))
+
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
+      setIsMobile(window.innerWidth < 768)
+    }
 
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [])
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
+      setCurrentTime(new Date())
+    }, 1000)
 
-    return () => clearInterval(timer);
-  }, []);
+    return () => clearInterval(timer)
+  }, [])
 
   useEffect(() => {
-    console.log("Context API State (useAuth):", { isAuthenticated, user });
-    console.log("Redux Auth State:", reduxAuthState);
-  }, []);
-
-  const announcements = [
-    {
-      id: 1,
-      title: "New HR Policy Integration",
-      description:
-        "We've added support for a new HR policy provider. Connect your accounts now!",
-      icon: "📋",
-    },
-    {
-      id: 2,
-      title: "Payroll Updates",
-      description:
-        "Check out the latest improvements to our payroll system, including enhanced automation features.",
-      icon: "💰",
-    },
-  ];
+    console.log("Context API State (useAuth):", { isAuthenticated, user })
+    console.log("Redux Auth State:", reduxAuthState)
+  }, [])
 
   return (
-    <div
-    >
+    <div>
       {/* Header */}
-      <div style={{ textAlign: "center", marginBottom: theme.spacing.xl }}>
+      <div style={{ textAlign: "center", marginBottom: theme.spacing.xxl }}>
         <img
-          src={CompanyLogo}
+          src={CompanyLogo || "/placeholder.svg"}
           alt="Company Logo"
           style={{
-            height: isMobile ? "85px" : "140px", // increased height
-            width: isMobile ? "auto" : "auto", // keeps aspect ratio
-            maxWidth: "240px", // ensures it doesn’t stretch too much
-            marginBottom: theme.spacing.lg, // slightly larger spacing
-            objectFit: "contain", // maintains proportion
+            height: isMobile ? "85px" : "140px",
+            width: "auto",
+            maxWidth: "240px",
+            marginBottom: theme.spacing.lg,
+            objectFit: "contain",
           }}
         />
 
@@ -85,127 +115,132 @@ const Home = () => {
             margin: "0 auto",
           }}
         >
-          Stay connected and manage your work efficiently. Access tools,
-          information, and updates to stay productive and aligned with your
-          team.
+          Stay connected and manage your work efficiently. Access tools, information, and updates to stay productive and
+          aligned with your team.
         </p>
       </div>
 
       {/* Quick Actions */}
-      <div style={{ textAlign: "center", marginBottom: theme.spacing.xl }}>
-        <h2
-          style={{
-            color: theme.colors.text.primary,
-            fontSize: isMobile ? "20px" : "24px",
-            fontWeight: "700",
-            marginBottom: theme.spacing.md,
-          }}
-        >
-          Quick Actions
-        </h2>
+      <div
+        style={{
+          background: theme.colors.surface,
+          borderRadius: theme.borderRadius.large,
+          padding: isMobile ? theme.spacing.xl : "40px",
+          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.06)",
+          border: `1px solid ${theme.colors.border}`,
+          paddingBottom: isMobile ? theme.spacing.xxl : "100px",
+        }}
+      >
         <div
           style={{
             display: "flex",
-            justifyContent: "center",
-            gap: theme.spacing.md,
-            flexWrap: isMobile ? "wrap" : "nowrap",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: theme.spacing.xl,
           }}
         >
-          <button
-            onClick={() => navigate("/dashboard")}
-            style={{
-              backgroundColor: theme.colors.primary,
-              color: theme.colors.white,
-              padding: isMobile ? "10px 20px" : "12px 24px",
-              border: "none",
-              borderRadius: theme.borderRadius.medium,
-              cursor: "pointer",
-              fontSize: isMobile ? "14px" : "16px",
-              fontWeight: "600",
-            }}
-          >
-            Go to Dashboard
-          </button>
-          <button
-            onClick={() => navigate("/employee-profile/" + user?.id)}
-            style={{
-              backgroundColor: theme.colors.grayLight,
-              color: theme.colors.text.primary,
-              padding: isMobile ? "10px 20px" : "12px 24px",
-              border: "none",
-              borderRadius: theme.borderRadius.medium,
-              cursor: "pointer",
-              fontSize: isMobile ? "14px" : "16px",
-              fontWeight: "600",
-            }}
-          >
-            View Profile
-          </button>
+          <div>
+            <h2
+              style={{
+                color: theme.colors.text.primary,
+                fontSize: isMobile ? "24px" : "28px",
+                fontWeight: "700",
+                margin: 0,
+                marginBottom: theme.spacing.xs,
+              }}
+            >
+              Quick Actions
+            </h2>
+            <p
+              style={{
+                color: theme.colors.text.secondary,
+                fontSize: "14px",
+                margin: 0,
+              }}
+            >
+              Navigate to your most-used features
+            </p>
+          </div>
         </div>
-      </div>
 
-      {/* Company News & Announcements */}
-      <div>
-        <h2
-          style={{
-            color: theme.colors.text.primary,
-            fontSize: isMobile ? "20px" : "24px",
-            fontWeight: "700",
-            marginBottom: theme.spacing.lg,
-          }}
-        >
-          Company News & Announcements
-        </h2>
         <div
           style={{
             display: "grid",
+            gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(240px, 1fr))",
             gap: theme.spacing.lg,
-            gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
           }}
         >
-          {announcements.map((announcement) => (
-            <div
-              key={announcement.id}
+          {visibleActions.map((action, index) => (
+            <button
+              key={index}
+              onMouseEnter={() => setHoveredButton(index)}
+              onMouseLeave={() => setHoveredButton(null)}
+              onClick={() => console.log(`Navigate to ${action.path}`)}
               style={{
-                backgroundColor: theme.colors.surface,
-                padding: theme.spacing.lg,
+                background: action.featured
+                  ? `${theme.colors.primaryLight}34`
+                  : hoveredButton === index
+                    ? theme.colors.gray
+                    : theme.colors.surface,
+                border:  action.featured 
+                    ? `2px solid ${
+                  hoveredButton === index
+                    ? theme.colors.primaryDark
+                    : theme.colors.primary
+                }` :`2px solid ${
+                  hoveredButton === index
+                    ? theme.colors.primary
+                    :  "transparent"
+                }`,
                 borderRadius: theme.borderRadius.large,
-                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                textAlign: "center",
+                padding: theme.spacing.xl,
+                cursor: "pointer",
+                transition: "all 0.3s ease",
+                transform: hoveredButton === index ? "translateY(-4px)" : "translateY(0)",
+                boxShadow:
+                  hoveredButton === index
+                    ? "0 12px 30px rgba(0, 0, 0, 0.12)"
+                    : "0 2px 8px rgba(0, 0, 0, 0.25)",
+                textAlign: "left",
+                display: "flex",
+                flexDirection: "column",
+                gap: theme.spacing.md,
               }}
             >
               <div
                 style={{
-                  fontSize: "24px",
-                  marginBottom: theme.spacing.sm,
+                  fontSize: "32px",
+                  color: theme.colors.primaryDark,
                 }}
               >
-                {announcement.icon}
+                {action.icon}
               </div>
-              <h3
-                style={{
-                  color: theme.colors.text.primary,
-                  fontSize: isMobile ? "16px" : "18px",
-                  fontWeight: "600",
-                  marginBottom: theme.spacing.sm,
-                }}
-              >
-                {announcement.title}
-              </h3>
-              <p
-                style={{
-                  color: theme.colors.text.secondary,
-                  fontSize: isMobile ? "12px" : "14px",
-                }}
-              >
-                {announcement.description}
-              </p>
-            </div>
+              <div>
+                <div
+                  style={{
+                    color: action.featured ? theme.colors.primaryDark : theme.colors.text.primary,
+                    fontSize: isMobile ? "16px" : "18px",
+                    fontWeight: "600",
+                    marginBottom: theme.spacing.xs,
+                  }}
+                >
+                  {action.label}
+                </div>
+                <div
+                  style={{
+                    color: action.featured ? theme.colors.primaryDark : theme.colors.primaryDark,
+                    fontSize: "13px",
+                  }}
+                >
+                  {action.featured ? "Access your analytics" : "Quick access"}
+                </div>
+              </div>
+            </button>
           ))}
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Home;
+export default Home

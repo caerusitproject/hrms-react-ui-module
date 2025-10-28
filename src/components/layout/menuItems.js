@@ -11,6 +11,7 @@ import ConfigIcon from "@mui/icons-material/Settings"; // Admin Config
 import GroupIcon from "@mui/icons-material/Group";
 import { Payment } from "@mui/icons-material";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
+import SendOutlinedIcon from "@mui/icons-material/SendOutlined";
 
 const user = JSON.parse(localStorage.getItem("user"));
 const userId = user?.id || 1; // fallback to 1 if not found
@@ -72,6 +73,13 @@ export const menuItems = [
     requiredRoles: ["ADMIN"],
   },
   {
+    path: "/email-process",
+    label: "Email Process",
+    icon: SendOutlinedIcon,
+    key: "email-process",
+    requiredRoles: ["HR", "ADMIN"], // optional, if HR can view
+  },
+  {
     path: "/broadcast",
     label: "Broadcast",
     icon: CampaignIcon,
@@ -85,13 +93,7 @@ export const menuItems = [
     key: "email-templates",
     requiredRoles: ["ADMIN"], // optional, if HR can view
   },
-  {
-    path: "/email-process",
-    label: "Email Process",
-    icon: EmailOutlinedIcon,
-    key: "email-process",
-    requiredRoles: ["HR"], // optional, if HR can view
-  },
+  
   {
     path: "/admin-config",
     label: "Admin Config",

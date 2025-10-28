@@ -21,6 +21,8 @@ import Button from "../../components/common/Button";
 import CustomLoader from "../../components/common/CustomLoader";
 const Dashboard = () => {
   const { user } = useAuth();
+  const role = user?.role || "USER"; // default to USER if undefined
+  
   const navigate = useNavigate();
 
   // Team Activity Feed Data - now dynamic for HR/MANAGER/ADMIN
@@ -28,7 +30,6 @@ const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const role = user?.role || "USER"; // default to USER if undefined
   
 
   useEffect(() => {

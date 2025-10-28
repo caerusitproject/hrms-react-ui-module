@@ -138,7 +138,7 @@ const AppRoutes = () => {
             <Route
               path="email-process"
               element={
-                <ProtectedRoute requiredRoles={["HR"]}>
+                <ProtectedRoute requiredRoles={["HR", "ADMIN"]}>
                   <Suspense fallback={<CustomLoader />}>
                     <SendMailPage />
                   </Suspense>

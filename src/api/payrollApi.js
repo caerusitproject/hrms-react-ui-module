@@ -11,16 +11,7 @@ const getAuthHeaders = () => {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 };
-const dummyEmployees = [
-  { id: "7", empCode: "EMP1028", name: "Rahul Sharma", email: "rahul.sharma@company.com", designation: "Senior Developer", department: "Engineering" },
-  { id: "8", empCode: "EMP1029", name: "Priya Singh", email: "priya.singh@company.com", designation: "HR Manager", department: "Human Resources" },
-  { id: "9", empCode: "EMP1030", name: "Vikram Reddy", email: "vikram.reddy@company.com", designation: "Data Analyst", department: "Analytics" },
-  { id: "10", empCode: "EMP1031", name: "Anita Patel", email: "anita.patel@company.com", designation: "Marketing Executive", department: "Marketing" },
-  { id: "11", empCode: "EMP1032", name: "Karan Gupta", email: "karan.gupta@company.com", designation: "Operations Lead", department: "Operations" },
-  { id: "12", empCode: "EMP1033", name: "Neha Joshi", email: "neha.joshi@company.com", designation: "Backend Developer", department: "Engineering" },
-  { id: "13", empCode: "EMP1034", name: "Arjun Mehta", email: "arjun.mehta@company.com", designation: "Finance Analyst", department: "Finance" },
-  { id: "14", empCode: "EMP1035", name: "Divya Rao", email: "divya.rao@company.com", designation: "Project Coordinator", department: "Project Management" },
-];
+
 
 // ✅ Employee API object
 export const PayrollApi = {

@@ -55,7 +55,7 @@ const SendMailPage = () => {
   50% { transform: translateY(-6px); }
 `;
 
-const rotate = keyframes`
+  const rotate = keyframes`
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 `;
@@ -301,7 +301,7 @@ const rotate = keyframes`
     };
 
     try {
-      console.log("📤 Sending Email Payload:", payload);
+      //console.log("📤 Sending Email Payload:", payload);
       const response = await EmailSendApi.sendEmail(payload);
       await new Promise((r) => setTimeout(r, 800));
 
@@ -423,9 +423,6 @@ const rotate = keyframes`
               fontWeight={700}
               sx={{ color: customTheme.colors.text.primary }}
             >
-              <MailOutline
-                sx={{ mr: 1, verticalAlign: "middle", fontSize: "1.5rem" }}
-              />{" "}
               Email Process
             </Typography>
           </Box>
@@ -593,7 +590,7 @@ const rotate = keyframes`
                     color: customTheme.colors.primary,
                     textTransform: "none",
                     fontWeight: 500,
-                    mb: 2,
+                    marginBottom: 2,
                   }}
                 >
                   Upload Files
@@ -615,6 +612,7 @@ const rotate = keyframes`
                         deleteIcon={<Delete />}
                         sx={{
                           backgroundColor: `${customTheme.colors.primaryLight}34`,
+                          marginTop: "8px",
                           color: customTheme.colors.primaryDark,
                           "& .MuiChip-deleteIcon": {
                             color: customTheme.colors.error,
@@ -690,7 +688,6 @@ const rotate = keyframes`
               <Box sx={{ display: "flex", justifyContent: "flex-end", pt: 2 }}>
                 <Button
                   variant="contained"
-                  startIcon={<MailOutline />}
                   onClick={handleSendMail}
                   disabled={loading || !mailForm.to || !mailForm.templateId}
                   sx={{
@@ -709,7 +706,17 @@ const rotate = keyframes`
                     },
                   }}
                 >
-                  {loading ? "Sending..." : "Send Mail"}
+                  {loading ? (
+                    "Sending..."
+                  ) : (
+                    <>
+                      Send  Mail
+                      <SendIcon
+                        fontSize="small"
+                        sx={{ ml: 0.5, verticalAlign: "middle" }}
+                      />
+                    </>
+                  )}
                 </Button>
               </Box>
             </Grid>
