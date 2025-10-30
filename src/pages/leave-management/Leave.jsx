@@ -1,44 +1,254 @@
-import React, { useState, useEffect } from "react";
+// Updated Leave.jsx
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useAuth } from "../../hooks/useAuth";
 import Calendar from "../../components/common/Calendar";
 import { theme } from "../../theme/theme";
+import { AttendanceAPI } from "../../api/attendanceApi";
+import { AllemployeeApi } from "../../api/getallemployeeApi";
+import {
+  Select,
+  MenuItem,
+  FormControl,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  IconButton,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Button as MuiButton,
+} from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
+import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
+import CustomLoader from "../../components/common/CustomLoader";
+import Button from "../../components/common/Button";
 
 const Leave = () => {
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 9, 1));
-  const [selectedDates, setSelectedDates] = useState([]);
+  const { user } = useAuth();
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [employees, setEmployees] = useState([]);
+  const [selectedEmpCode, setSelectedEmpCode] = useState("");
+  const [showDropdown, setShowDropdown] = useState(true);
+  const [employeesLoading, setEmployeesLoading] = useState(false);
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(
+    today.getMonth() + 1
+  ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const role = user?.role || "USER";
+  const canViewAll = ["MANAGER", "ADMIN", "HR"].includes(role);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  // Selection states for leave application
+  const [isApplyingLeave, setIsApplyingLeave] = useState(false);
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
   const [isSelecting, setIsSelecting] = useState(false);
+  const [selectedDates, setSelectedDates] = useState([]);
   const [dragStart, setDragStart] = useState(null);
   const [dragEnd, setDragEnd] = useState(null);
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [showNextMonthButton, setShowNextMonthButton] = useState(false);
-  const [lastDayOfMonth, setLastDayOfMonth] = useState(null);
-  const [confirmedLeaves, setConfirmedLeaves] = useState([]);
-  const [isMobile, setIsMobile] = useState(false);
-  const today = new Date(2025, 9, 3);
+
+  // Ref for synchronous isSelecting access
+  const isSelectingRef = useRef(false);
 
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+    isSelectingRef.current = isSelecting;
+  }, [isSelecting]);
 
-  // Dummy leave/holiday dataset
-  const leaveData = [
-    { date: "2025-10-05", type: "Holiday", label: "Client Call Holiday" },
-    { date: "2025-10-06", type: "Leave", label: "Absent" },
-    { date: "2025-10-12", type: "Leave", label: "Board Meeting Leave" },
-    { date: "2025-10-18", type: "Holiday", label: "Quarterly Review Holiday" },
-    { date: "2025-10-20", type: "Leave", label: "Absent" },
-    { date: "2025-10-25", type: "Holiday", label: "All Hands Holiday" },
-    { date: "2025-10-28", type: "Leave", label: "Performance Review Leave" },
-    { date: "2025-11-05", type: "Holiday", label: "Team Event" },
-    { date: "2025-11-15", type: "Holiday", label: "Company Holiday" },
+  // Leaves list
+  const [leaves, setLeaves] = useState([]);
+
+  // Pending leaves for manager (mock; replace with API fetch)
+  const [pendingLeaves, setPendingLeaves] = useState([]);
+
+  // Holidays (dummy; replace with API fetch if needed)
+  const holidays = [
+    "2025-10-05",
+    "2025-10-18",
+    "2025-10-25",
+    "2025-11-05",
+    "2025-11-15",
   ];
 
-  // Range selector with weekends & holidays skipped
-  const getDatesInRange = (start, end, events) => {
+  // Default to current user's empCode
+  useEffect(() => {
+    if (user?.empCode) {
+      setSelectedEmpCode(user.empCode);
+    } else {
+      setSelectedEmpCode("EMP001");
+    }
+  }, [user]);
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Fetch employees list if authorized
+  useEffect(() => {
+    if (canViewAll) {
+      const fetchEmployees = async () => {
+        try {
+          setEmployeesLoading(true);
+          const response = await AllemployeeApi.getEmployeesByRole();
+          if (response.success) {
+            setEmployees(response.data.employeeList || []);
+            if (user?.id) {
+              const currentEmp = response.data.employeeList.find(
+                (emp) => emp.id === user.id.toString()
+              );
+              if (currentEmp) {
+                setSelectedEmpCode(currentEmp.empCode);
+              }
+            }
+          } else {
+            throw new Error(response.message || "Failed to fetch employees");
+          }
+        } catch (err) {
+          console.error("Error fetching employees:", err);
+          setShowDropdown(false);
+        } finally {
+          setEmployeesLoading(false);
+        }
+      };
+      fetchEmployees();
+    }
+  }, [canViewAll, user]);
+
+  // Fetch attendance data when month/year or selectedEmpCode changes
+  useEffect(() => {
+    if (!selectedEmpCode) return;
+    const fetchAttendance = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const month = currentDate.getMonth() + 1;
+        const year = currentDate.getFullYear();
+        const response = await AttendanceAPI.getAttendanceByEmployee(
+          selectedEmpCode,
+          month,
+          year
+        );
+        if (response.success) {
+          setAttendanceData(response.data);
+        } else {
+          throw new Error(
+            response.message || "Failed to fetch attendance data"
+          );
+        }
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAttendance();
+  }, [currentDate, selectedEmpCode]);
+
+  // Fetch leaves (mock for now; replace with actual LeaveAPI.getLeaves(selectedEmpCode))
+  useEffect(() => {
+    if (!selectedEmpCode) return;
+    const fetchLeaves = async () => {
+      try {
+        // Mock data; in real, await LeaveAPI.getLeavesByEmployee(selectedEmpCode)
+        const mockLeaves = [
+          {
+            id: 1,
+            start: "2025-10-01",
+            end: "2025-10-03",
+            days: 3,
+            status: "Approved",
+          },
+          {
+            id: 2,
+            start: "2025-10-15",
+            end: "2025-10-15",
+            days: 1,
+            status: "Pending",
+          },
+        ];
+        setLeaves(mockLeaves);
+      } catch (err) {
+        console.error("Error fetching leaves:", err);
+      }
+    };
+    fetchLeaves();
+  }, [selectedEmpCode]);
+
+  // Fetch pending leaves for manager (mock)
+  useEffect(() => {
+    if (role === "MANAGER") {
+      const fetchPendingLeaves = async () => {
+        try {
+          // Mock data; in real, await LeaveAPI.getPendingLeavesForManager()
+          const mockPending = [
+            {
+              id: 3,
+              empCode: "EMP002",
+              start: "2025-11-01",
+              end: "2025-11-08",
+              days: 8,
+              status: "Pending",
+            },
+            {
+              id: 4,
+              empCode: "EMP003",
+              start: "2025-11-10",
+              end: "2025-11-10",
+              days: 1,
+              status: "Pending",
+            },
+          ];
+          setPendingLeaves(mockPending);
+        } catch (err) {
+          console.error("Error fetching pending leaves:", err);
+        }
+      };
+      fetchPendingLeaves();
+    }
+  }, [role]);
+
+  // Calculate hours from checkIn and checkOut times
+  const calculateHours = (checkIn, checkOut) => {
+    if (!checkIn || !checkOut) return "Absent";
+    const start = new Date(`1970-01-01T${checkIn}Z`);
+    const end = new Date(`1970-01-01T${checkOut}Z`);
+    const diffMs = end - start;
+    if (diffMs <= 0) return "Absent";
+    const hours = diffMs / (1000 * 60 * 60);
+    return `${hours.toFixed(1)}hrs`;
+  };
+
+  // Transform API data for calendar (adapt for leave view if needed)
+  const attendanceEvents = attendanceData.map((item) => ({
+    date: item.date,
+    type: item.status === "Absent" ? "Leave" : "Present",
+    label:
+      item.status === "Absent"
+        ? "Absent"
+        : calculateHours(item.checkIn, item.checkOut),
+  }));
+
+  // Add holidays to events
+  const events = [
+    ...attendanceEvents,
+    ...holidays.map((date) => ({ date, type: "Holiday", label: "Holiday" })),
+  ];
+
+  // Range selector skipping weekends, holidays, and past dates
+  const getDatesInRange = (start, end) => {
     if (!start || !end) return [];
     const startDate = new Date(start);
     const endDate = new Date(end);
@@ -53,14 +263,15 @@ const Leave = () => {
       const month = String(current.getMonth() + 1).padStart(2, "0");
       const day = String(current.getDate()).padStart(2, "0");
       const dateStr = `${year}-${month}-${day}`;
-      const event = events.find((e) => e.date === dateStr);
       const dayOfWeek = current.getDay(); // 0=Sunday, 6=Saturday
+      const isHoliday = holidays.includes(dateStr);
 
-      // Allow only Mon–Fri, skip Sat/Sun + holidays
+      // Skip past dates, weekends, and holidays
       if (
+        dateStr > todayStr &&
         dayOfWeek !== 0 &&
         dayOfWeek !== 6 &&
-        (!event || event.type !== "Holiday")
+        !isHoliday
       ) {
         dates.push(dateStr);
       }
@@ -69,70 +280,29 @@ const Leave = () => {
     return dates;
   };
 
-  // Click/drag handler
-  const handleSelectionChange = (dateStr, action) => {
-    const clickedDay = new Date(dateStr).getDay();
-    const isHoliday = leaveData.some(
-      (e) => e.date === dateStr && e.type === "Holiday"
-    );
+  // Confirmed dates from leaves
+  const allConfirmedDates = useMemo(
+    () => leaves.flatMap((leave) => getDatesInRange(leave.start, leave.end)),
+    [leaves]
+  );
 
-    // Skip weekends & holidays instantly
-    if (clickedDay === 0 || clickedDay === 6 || isHoliday) return;
+  // Totals (labels adjusted for leave context; Absent as Used Leaves)
+  const totalHours = attendanceData
+    .filter((a) => a.status !== "Absent")
+    .reduce((sum, a) => {
+      const hours = calculateHours(a.checkIn, a.checkOut);
+      return sum + (hours !== "Absent" ? parseFloat(hours) : 0);
+    }, 0);
 
-    if (action === "click") {
-      if (!isSelecting) {
-        setIsSelecting(true);
-        setDragStart(dateStr);
-        setDragEnd(dateStr);
-        setSelectedDates([dateStr]);
-
-        const lastDay = new Date(
-          currentDate.getFullYear(),
-          currentDate.getMonth() + 1,
-          0
-        ).getDate();
-        const date = new Date(dateStr);
-        setShowNextMonthButton(date.getDate() === lastDay);
-      } else {
-        setDragEnd(dateStr);
-        const dates = getDatesInRange(dragStart, dateStr, leaveData);
-        setSelectedDates(dates);
-        setIsSelecting(false);
-        setShowNextMonthButton(false);
-      }
-    } else if (action === "hover" && isSelecting) {
-      setDragEnd(dateStr);
-      const dates = getDatesInRange(dragStart, dateStr, leaveData);
-      setSelectedDates(dates);
-
-      const lastDay = new Date(
-        currentDate.getFullYear(),
-        currentDate.getMonth() + 1,
-        0
-      ).getDate();
-      const date = new Date(dateStr);
-      setShowNextMonthButton(date.getDate() === lastDay);
-      setLastDayOfMonth(date.getDate() === lastDay ? dateStr : null);
-    }
-  };
-
-  const handleEdgeHover = (direction, dayNum) => {
-    if (isSelecting) {
-      const lastDay = new Date(
-        currentDate.getFullYear(),
-        currentDate.getMonth() + 1,
-        0
-      ).getDate();
-      setShowNextMonthButton(direction === "next" && dayNum === lastDay);
-    }
-  };
+  const absentDays = attendanceData.filter((a) => a.status === "Absent").length;
+  const presentDays = attendanceData.length - absentDays;
 
   const handleMonthChange = (direction) => {
     const newDate = new Date(currentDate);
     newDate.setMonth(newDate.getMonth() + direction);
     setCurrentDate(newDate);
 
-    if (isSelecting) {
+    if (isSelectingRef.current) {
       const newYear = newDate.getFullYear();
       const newMonth = newDate.getMonth();
       const newDragEndDate =
@@ -144,272 +314,358 @@ const Leave = () => {
         newDragEndDate.getMonth() + 1
       ).padStart(2, "0")}-${String(newDragEndDate.getDate()).padStart(2, "0")}`;
       setDragEnd(newDragEndStr);
-      const dates = getDatesInRange(dragStart, newDragEndStr, leaveData);
+      const dates = getDatesInRange(dragStart, newDragEndStr);
       setSelectedDates(dates);
     }
     setShowNextMonthButton(false);
   };
 
-  const handleApplyLeave = () => {
-    if (selectedDates.length > 0) {
-      const newLeave = {
-        id: Date.now(),
-        dates: [...selectedDates].sort(),
-        appliedOn: new Date().toLocaleDateString(),
-      };
-      setConfirmedLeaves([...confirmedLeaves, newLeave]);
-      setSelectedDates([]);
-      setIsSelectionMode(false);
+  // Handle selection change for leave range
+  const handleSelectionChange = (dateStr, action) => {
+    if (action === "end") {
+      if (startDate && selectedDates.length > 0) {
+        const endStr = selectedDates[selectedDates.length - 1];
+        setEndDate(endStr);
+      }
+      isSelectingRef.current = false;
       setIsSelecting(false);
-      setDragStart(null);
-      setDragEnd(null);
-      setShowNextMonthButton(false);
+      return;
+    }
+
+    if (!dateStr || dateStr <= todayStr) return;
+
+    const date = new Date(dateStr);
+    const clickedDay = date.getDay();
+    const isHoliday = holidays.includes(dateStr);
+
+    // Skip weekends & holidays instantly
+    if (clickedDay === 0 || clickedDay === 6 || isHoliday) return;
+
+    const lastDay = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth() + 1,
+      0
+    ).getDate();
+
+    if (action === "click") {
+      if (!startDate) {
+        // First click: set start
+        setStartDate(dateStr);
+        setDragStart(dateStr);
+        setDragEnd(dateStr);
+        const dates = [dateStr];
+        setSelectedDates(dates);
+        isSelectingRef.current = true;
+        setIsSelecting(true);
+        setShowNextMonthButton(date.getDate() === lastDay);
+      } else {
+        // Second click: set end and complete selection
+        setEndDate(dateStr);
+        setDragEnd(dateStr);
+        const dates = getDatesInRange(startDate, dateStr);
+        setSelectedDates(dates);
+        isSelectingRef.current = false;
+        setIsSelecting(false);
+        setShowNextMonthButton(false);
+      }
+    } else if (action === "hover" && isSelectingRef.current) {
+      // Hover: update temporary range
+      setDragEnd(dateStr);
+      const dates = getDatesInRange(dragStart, dateStr);
+      setSelectedDates(dates);
+      setShowNextMonthButton(date.getDate() === lastDay);
     }
   };
 
-  const handleCancelSelection = () => {
-    setSelectedDates([]);
-    setIsSelectionMode(false);
+  const handleEdgeHover = (direction, dayNum) => {
+    if (isSelectingRef.current) {
+      const lastDay = new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth() + 1,
+        0
+      ).getDate();
+      setShowNextMonthButton(direction === "next" && dayNum === lastDay);
+    }
+  };
+
+  const handleCancel = () => {
+    setIsApplyingLeave(false);
+    setStartDate(null);
+    setEndDate(null);
+    isSelectingRef.current = false;
     setIsSelecting(false);
+    setSelectedDates([]);
     setDragStart(null);
     setDragEnd(null);
     setShowNextMonthButton(false);
   };
 
-  const removeLeaveDate = (leaveId, dateToRemove) => {
-    setConfirmedLeaves(
-      confirmedLeaves
-        .map((leave) => {
-          if (leave.id === leaveId) {
-            const updatedDates = leave.dates.filter(
-              (date) => date !== dateToRemove
-            );
-            return { ...leave, dates: updatedDates };
-          }
-          return leave;
-        })
-        .filter((leave) => leave.dates.length > 0)
+  const handleConfirm = async () => {
+    if (!startDate || !endDate || selectedDates.length === 0) return;
+    try {
+      // TODO: Call API to apply leave, e.g., await LeaveAPI.applyLeave(selectedEmpCode, startDate, endDate, selectedDates)
+      console.log("Applying leave for dates:", selectedDates);
+      // Mock API delay
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // After success, add to leaves (in real, refetch leaves)
+      const newLeave = {
+        id: Date.now(),
+        start: startDate,
+        end: endDate,
+        days: selectedDates.length,
+        status: "Pending",
+      };
+      setLeaves((prev) => [...prev, newLeave]);
+      // Optionally refetch attendance if it updates status
+    } catch (err) {
+      console.error("Error applying leave:", err);
+      // Handle error
+    } finally {
+      handleCancel();
+    }
+  };
+
+  // Modal states for delete
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedLeaveToDelete, setSelectedLeaveToDelete] = useState(null);
+
+  const handleDeleteClick = (leave) => {
+    setSelectedLeaveToDelete(leave);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (selectedLeaveToDelete) {
+      setLeaves((prev) =>
+        prev.filter((l) => l.id !== selectedLeaveToDelete.id)
+      );
+      // TODO: Call API to delete leave
+    }
+    setDeleteModalOpen(false);
+    setSelectedLeaveToDelete(null);
+  };
+
+  // Modal states for approve/reject
+  const [actionModalOpen, setActionModalOpen] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [actionType, setActionType] = useState(""); // "approve" or "reject"
+
+  const handleApproveClick = (request) => {
+    setSelectedRequest(request);
+    setActionType("approve");
+    setActionModalOpen(true);
+  };
+
+  const handleRejectClick = (request) => {
+    setSelectedRequest(request);
+    setActionType("reject");
+    setActionModalOpen(true);
+  };
+
+  const handleActionConfirm = () => {
+    if (selectedRequest) {
+      setPendingLeaves((prev) =>
+        prev
+          .map((req) =>
+            req.id === selectedRequest.id
+              ? {
+                  ...req,
+                  status: actionType === "approve" ? "Approved" : "Rejected",
+                }
+              : req
+          )
+          .filter((req) => req.status === "Pending")
+      ); // Remove from pending if action taken
+      // TODO: Call API to approve/reject leave
+    }
+    setActionModalOpen(false);
+    setSelectedRequest(null);
+    setActionType("");
+  };
+
+  const boxStyle = {
+    textAlign: "center",
+    fontSize: isMobile ? "12px" : "16px",
+    fontWeight: 600,
+  };
+
+  const labelStyle = {
+    fontSize: isMobile ? "9px" : "16px",
+    opacity: 0.9,
+    whiteSpace: "nowrap",
+  };
+
+  const headerCommonStyle = {
+    width: "100%",
+    marginBottom: "16px",
+    backgroundColor: `${theme.colors.primaryLight}34`,
+    borderRadius: "10px",
+  };
+
+  const summaryBoxesStyle = {
+    display: "flex",
+    gap: isMobile ? "20px" : "25px",
+    justifyContent: "center",
+    flexWrap: "nowrap",
+  };
+
+  const summariesContainerStyle = isMobile
+    ? {
+        width: "100%",
+        display: "flex",
+        gap: isMobile ? "20px" : "20px",
+        justifyContent: "center",
+        paddingBottom: "3px",
+      }
+    : summaryBoxesStyle;
+
+  // Custom theme reference (assuming customTheme is available; adjust if needed)
+  const customTheme = theme; // Use existing theme or import custom one
+
+  if (loading || employeesLoading) {
+    return (
+      <div>
+        <CustomLoader />
+      </div>
     );
-  };
+  }
 
-  const formatDateRange = (dates) => {
-    if (dates.length === 0) return "";
-    return dates.length === 1
-      ? dates[0]
-      : `${dates[0]} to ${dates[dates.length - 1]}`;
-  };
-
-  // Flatten confirmed leaves for calendar styling
-  const allConfirmedDates = confirmedLeaves.flatMap((leave) => leave.dates);
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
 
   return (
-    <div
-      style={{
-        width: "100%",
-        maxWidth: "95%",
-        boxSizing: "border-box",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      {/* Header */}
-      <div
+    <div>
+      <h1
         style={{
-          //background: "linear-gradient(135deg, #ffb74d 0%, #ff9800 100%)",
-          background: theme.colors.primary,
-          padding: isMobile ? "15px 10px" : "20px",
-          borderRadius: isMobile ? "8px" : "12px",
-          marginBottom: isMobile ? "15px" : "20px",
-          display: "flex",
-          flexDirection: isMobile ? "column" : "row",
-          justifyContent: "space-between",
-          alignItems: isMobile ? "stretch" : "center",
-          gap: isMobile ? "15px" : "0",
-          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+          fontSize: "25px",
+          fontWeight: "700",
+          color: theme.colors.text.primary,
+          margin: 0,
         }}
       >
-        {/* Nav */}
-        <div
-          style={{
-            display: "flex",
-            gap: "10px",
-            justifyContent: isMobile ? "center" : "flex-start",
-            flexWrap: isMobile ? "wrap" : "nowrap",
-          }}
-        >
-          <button
-            onClick={() => handleMonthChange(-1)}
-            style={{
-              background: theme.colors.white,
-              border: "none",
-              color: theme.colors.primary,
-              padding: isMobile ? "12px 24px" : "8px 12px",
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontSize: isMobile ? "16px" : "16px",
-              transition: "background 0.3s",
-              flex: isMobile ? "1 1 45%" : "0",
-              minWidth: isMobile ? "100px" : "auto",
-              textAlign: "center",
-            }}
-          >
-            ←
-          </button>
-          <button
-            onClick={() => handleMonthChange(1)}
-            style={{
-              background: theme.colors.white,
-              border: "none",
-              color: theme.colors.primary,
-              padding: isMobile ? "12px 24px" : "8px 12px",
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontSize: isMobile ? "16px" : "16px",
-              transition: "background 0.3s",
-              flex: isMobile ? "1 1 45%" : "0",
-              minWidth: isMobile ? "100px" : "auto",
-              textAlign: "center",
-              fontWeight: "bold",
-            }}
-          >
-            →
-          </button>
-        </div>
-
-        <h2
-          style={{
-            color: "#fff",
-            margin: 0,
-            fontSize: isMobile ? "18px" : "24px",
-            fontWeight: "600",
-            textAlign: isMobile ? "center" : "left",
-          }}
-        >
-          {isSelectionMode ? "Select Leave Dates" : "Leave Calendar"}
-        </h2>
-
-        {isSelectionMode ? (
+        Leave Calendar
+      </h1>
+      <div
+        style={{
+          ...headerCommonStyle,
+          display: "flex",
+          flexDirection: isMobile ? "column" : "row",
+          justifyContent: isMobile ? "center" : "space-between",
+          alignItems: "center",
+          padding: isMobile ? "4px 8px" : "12px 16px",
+          gap: isMobile ? "8px" : "0",
+          marginTop: isMobile ? "15px" : "20px",
+          paddingTop: isMobile ? "8px" : "10px",
+          paddingBottom: isMobile ? "8px" : "10px",
+        }}
+      >
+        <div style={summariesContainerStyle}>
           <div
             style={{
-              display: "flex",
-              gap: "10px",
-              justifyContent: isMobile ? "center" : "flex-end",
-              flexWrap: isMobile ? "wrap" : "nowrap",
+              ...boxStyle,
+              backgroundColor: "transparent",
+              border: `${isMobile ? "1px" : "2px"} solid ${
+                theme.colors.secondary
+              }`,
+              borderRadius: isMobile ? "10px" : "8px",
+              padding: isMobile ? "6px 8px" : "8px 12px",
             }}
           >
-            <button
-              onClick={handleCancelSelection}
-              style={{
-                background: "#dc3545",
-                border: "none",
-                color: "#fff",
-                padding: isMobile ? "12px 24px" : "10px 20px",
-                borderRadius: "6px",
-                cursor: "pointer",
-                fontWeight: "500",
-                fontSize: isMobile ? "14px" : "14px",
-                transition: "background 0.3s",
-                flex: isMobile ? "1 1 45%" : "0",
-                minWidth: isMobile ? "100px" : "auto",
-                textAlign: "center",
-              }}
-              onMouseOver={(e) => (e.target.style.background = "#c82333")}
-              onMouseOut={(e) => (e.target.style.background = "#dc3545")}
-              onTouchStart={(e) => (e.target.style.background = "#c82333")}
-              onTouchEnd={(e) => (e.target.style.background = "#dc3545")}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleApplyLeave}
-              disabled={selectedDates.length === 0}
-              style={{
-                background:
-                  selectedDates.length > 0
-                    ? "#fff"
-                    : "rgba(255, 255, 255, 0.3)",
-                border: "none",
-                color: "#000",
-                padding: isMobile ? "12px 24px" : "10px 20px",
-                borderRadius: "6px",
-                cursor: selectedDates.length > 0 ? "pointer" : "not-allowed",
-                fontWeight: "500",
-                fontSize: isMobile ? "14px" : "14px",
-                transition: "background 0.3s",
-                flex: isMobile ? "1 1 45%" : "0",
-                minWidth: isMobile ? "100px" : "auto",
-                textAlign: "center",
-              }}
-              // onMouseOver={(e) =>
-              //   (e.target.style.background =
-              //     selectedDates.length > 0
-              //       ? "#218838"
-              //       : "rgba(255, 255, 255, 0.3)")
-              // }
-              // onMouseOut={(e) =>
-              //   (e.target.style.background =
-              //     selectedDates.length > 0
-              //       ? "#28a745"
-              //       : "rgba(255, 255, 255, 0.3)")
-              // }
-              onTouchStart={(e) =>
-                (e.target.style.background =
-                  selectedDates.length > 0
-                    ? "#218838"
-                    : "rgba(255, 255, 255, 0.3)")
-              }
-              onTouchEnd={(e) =>
-                (e.target.style.background =
-                  selectedDates.length > 0
-                    ? "#28a745"
-                    : "rgba(255, 255, 255, 0.3)")
-              }
-            >
-              Confirm Leave ({selectedDates.length})
-            </button>
+            {totalHours.toFixed(1)}
+            <div style={{ ...labelStyle, color: theme.colors.black }}>
+              Total Worked Hours
+            </div>
           </div>
-        ) : (
-          <button
-            onClick={() => setIsSelectionMode(true)}
+          <div
             style={{
-              background: "theme.colors.white",
-              border: "none",
-              color: "#000",
-              padding: isMobile ? "12px 24px" : "10px 20px",
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontWeight: "500",
-              fontSize: isMobile ? "14px" : "14px",
-              transition: "background 0.3s",
-              width: isMobile ? "100%" : "auto",
-              textAlign: "center",
+              ...boxStyle,
+              backgroundColor: "transparent",
+              border: `${isMobile ? "1px" : "2px"} solid ${
+                theme.colors.success
+              }`,
+              borderRadius: isMobile ? "10px" : "8px",
+              padding: isMobile ? "6px 8px" : "8px 12px",
             }}
-            onMouseOver={(e) => (e.target.style.background = "rgba(255, 255, 255, 0.3)")}
-            onMouseOut={(e) => (e.target.style.background = "rgba(255, 255, 255, 0.3)")}
-            onTouchStart={(e) => (e.target.style.background = "rgba(255, 255, 255, 0.3)")}
-            onTouchEnd={(e) => (e.target.style.background = "rgba(255, 255, 255, 0.3)")}
           >
-            Apply for Leave
-          </button>
-        )}
+            {presentDays}
+            <div style={{ ...labelStyle, color: theme.colors.black }}>
+              Present Days
+            </div>
+          </div>
+          <div
+            style={{
+              ...boxStyle,
+              backgroundColor: "transparent",
+              border: `${isMobile ? "1px" : "2px"} solid ${theme.colors.error}`,
+              borderRadius: isMobile ? "10px" : "8px",
+              padding: isMobile ? "6px 8px" : "8px 12px",
+            }}
+          >
+            {absentDays}
+            <div style={{ ...labelStyle, color: theme.colors.black }}>
+              Absent Days
+            </div>
+          </div>
+        </div>
+        <div
+          style={{
+            width: isMobile ? "100%" : "auto",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            gap: "10px",
+          }}
+        >
+          {!isApplyingLeave ? (
+            <Button type="primary" onClick={() => setIsApplyingLeave(true)}>
+              Apply Leave
+            </Button>
+          ) : endDate ? (
+            <>
+              <Button type="secondary" onClick={handleCancel}>
+                Cancel
+              </Button>
+              <Button type="primary" onClick={handleConfirm}>
+                Confirm
+              </Button>
+            </>
+          ) : (
+            <Button type="secondary" onClick={handleCancel}>
+              Cancel
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Calendar */}
       <div style={{ position: "relative" }}>
         <Calendar
           year={currentDate.getFullYear()}
           month={currentDate.getMonth()}
-          events={leaveData}
+          events={events}
           mode="leave"
           selectedDates={selectedDates}
           confirmedDates={allConfirmedDates}
           onSelectionChange={handleSelectionChange}
           isSelecting={isSelecting}
-          dragStart={dragStart}
-          dragEnd={dragEnd}
-          isSelectionMode={isSelectionMode}
+          isSelectionMode={isApplyingLeave}
           darkTheme={false}
           today={today}
           onEdgeHover={handleEdgeHover}
+          onPrevMonth={() => handleMonthChange(-1)}
+          onNextMonth={() => handleMonthChange(1)}
+          isMobile={isMobile}
+          buttonStyle={{
+            background: `${theme.colors.primary}`,
+            border: "2px solid white",
+            color: "#fff",
+            padding: isMobile ? "8px 12px" : "8px 14px",
+            borderRadius: "6px",
+            cursor: "pointer",
+            fontSize: isMobile ? "10px" : "12px",
+            fontWeight: "bold",
+            transition: "0.3s",
+          }}
         />
 
         {showNextMonthButton && !isMobile && (
@@ -439,96 +695,181 @@ const Leave = () => {
         )}
       </div>
 
-      {/* Applied Leaves List */}
-      {confirmedLeaves.length > 0 && (
-        <div
-          style={{
-            marginTop: isMobile ? "20px" : "30px",
-            background: "#fff",
-            padding: isMobile ? "15px" : "20px",
-            borderRadius: isMobile ? "8px" : "12px",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-          }}
-        >
-          <h3
+      {/* Applied Leaves Table */}
+      {leaves.length > 0 && (
+        <div style={{ marginTop: "20px" }}>
+          <h2
             style={{
-              color: "#333",
-              marginBottom: isMobile ? "15px" : "20px",
-              fontSize: isMobile ? "18px" : "20px",
-              fontWeight: "600",
-              borderBottom: "2px solid #667eea",
-              paddingBottom: "10px",
+              fontSize: "20px",
+              color: theme.colors.text.primary,
+              marginBottom: "16px",
             }}
           >
             Applied Leaves
-          </h3>
-
-          {confirmedLeaves.flatMap((leave) =>
-            leave.dates.map((date, index) => (
-              <div
-                key={`${leave.id}-${index}`}
-                style={{
-                  background: "#f8f9fa",
-                  padding: isMobile ? "12px" : "15px",
-                  borderRadius: "8px",
-                  marginBottom: isMobile ? "12px" : "15px",
-                  border: "1px solid #e0e0e0",
-                  display: "flex",
-                  flexDirection: isMobile ? "column" : "row",
-                  justifyContent: "space-between",
-                  alignItems: isMobile ? "stretch" : "center",
-                  gap: isMobile ? "12px" : "0",
-                  backgroundColor: "#a74e57ff",
-                }}
-              >
-                <div style={{ flex: 1 }}>
-                  <div
-                    style={{
-                      fontSize: isMobile ? "14px" : "16px",
-                      fontWeight: "600",
-                      color: "#fff",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    {date}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: isMobile ? "12px" : "14px",
-                      color: "#fff",
-                      marginBottom: isMobile ? "0" : "8px",
-                    }}
-                  >
-                    Applied on: {leave.appliedOn}
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => removeLeaveDate(leave.id, date)}
-                  style={{
-                    background: "#28a745",
-                    border: "none",
-                    color: "#fff",
-                    padding: isMobile ? "10px 16px" : "8px 16px",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                    fontSize: isMobile ? "13px" : "14px",
-                    fontWeight: "500",
-                    transition: "background 0.3s",
-                    width: isMobile ? "100%" : "auto",
-                  }}
-                  onMouseOver={(e) => (e.target.style.background = "#218838")}
-                  onMouseOut={(e) => (e.target.style.background = "#28a745")}
-                  onTouchStart={(e) => (e.target.style.background = "#218838")}
-                  onTouchEnd={(e) => (e.target.style.background = "#28a745")}
-                >
-                  Remove
-                </button>
-              </div>
-            ))
-          )}
+          </h2>
+          <Paper
+            sx={{
+              overflowX: "auto",
+              borderRadius: customTheme.borderRadius?.large || "8px",
+              boxShadow:
+                customTheme.shadows?.medium || "0px 2px 4px rgba(0,0,0,0.1)",
+              backgroundColor: customTheme.colors?.surface || "#fff",
+            }}
+          >
+            <TableContainer>
+              <Table sx={{ minWidth: 300 }}>
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: customTheme.colors.gray }}>
+                    <TableCell>Start Date</TableCell>
+                    <TableCell>End Date</TableCell>
+                    <TableCell>Days</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell align="center">Action</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {leaves.map((leave) => (
+                    <TableRow key={leave.id}>
+                      <TableCell>{leave.start}</TableCell>
+                      <TableCell>{leave.end}</TableCell>
+                      <TableCell>{leave.days}</TableCell>
+                      <TableCell>{leave.status}</TableCell>
+                      <TableCell align="center">
+                        <IconButton
+                          onClick={() => handleDeleteClick(leave)}
+                          color="error"
+                          size="small"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteModalOpen} onClose={() => setDeleteModalOpen(false)}>
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this leave application?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <MuiButton
+            onClick={() => setDeleteModalOpen(false)}
+            color="secondary"
+          >
+            Cancel
+          </MuiButton>
+          <MuiButton
+            onClick={handleDeleteConfirm}
+            color="error"
+            variant="contained"
+          >
+            Confirm ({selectedLeaveToDelete?.days || 0})
+          </MuiButton>
+        </DialogActions>
+      </Dialog>
+
+      {/* Manager's Leave Requests Table */}
+      {["MANAGER", "ADMIN", "HR"].includes(role) &&
+        Array.isArray(pendingLeaves) &&
+        pendingLeaves.length > 0 && (
+          <div style={{ marginTop: "20px" }}>
+            <h2
+              style={{
+                fontSize: "20px",
+                color: theme.colors.text.primary,
+                marginBottom: "16px",
+              }}
+            >
+              Leave Requests
+            </h2>
+            <Paper
+              sx={{
+                overflowX: "auto",
+                borderRadius: customTheme.borderRadius?.large || "8px",
+                boxShadow:
+                  customTheme.shadows?.medium || "0px 2px 4px rgba(0,0,0,0.1)",
+                backgroundColor: customTheme.colors?.surface || "#fff",
+              }}
+            >
+              <TableContainer>
+                <Table sx={{ minWidth: 300 }}>
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: customTheme.colors.primaryLight }}>
+                      <TableCell>Start Date</TableCell>
+                      <TableCell>End Date</TableCell>
+                      <TableCell>Days</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell align="center">Action</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {pendingLeaves.map((request) => (
+                      <TableRow key={request.id}>
+                        <TableCell>{request.start}</TableCell>
+                        <TableCell>{request.end}</TableCell>
+                        <TableCell>{request.days}</TableCell>
+                        <TableCell>{request.status}</TableCell>
+                        <TableCell align="center">
+                          <IconButton
+                            onClick={() => handleApproveClick(request)}
+                            color="success"
+                            size="small"
+                          >
+                            <CheckIcon />
+                          </IconButton>
+                          <IconButton
+                            onClick={() => handleRejectClick(request)}
+                            color="error"
+                            size="small"
+                          >
+                            <CloseIcon />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Paper>
+          </div>
+        )}
+
+      {/* Approve/Reject Action Dialog */}
+      <Dialog open={actionModalOpen} onClose={() => setActionModalOpen(false)}>
+        <DialogTitle>
+          {actionType === "approve" ? "Approve Leave" : "Reject Leave"}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to {actionType} this leave request?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <MuiButton
+            onClick={() => setActionModalOpen(false)}
+            color="secondary"
+          >
+            Cancel
+          </MuiButton>
+          <MuiButton
+            onClick={handleActionConfirm}
+            color={actionType === "approve" ? "success" : "error"}
+            variant="contained"
+          >
+            {actionType === "approve" ? "Approve" : "Reject"} (
+            {selectedRequest?.days || 0})
+          </MuiButton>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 };

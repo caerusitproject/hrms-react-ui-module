@@ -35,9 +35,13 @@ const EmployeeProfileEdit = () => {
 
   const isProfessionalEditable = ["HR", "ADMIN"].includes(role);
   const isOwnProfile = isEditMode && parseInt(id) === currentUserId;
-  const canEditPersonal = !isEditMode || (["HR", "ADMIN"].includes(role) || isOwnProfile);
-  const canSave = !isEditMode || (canEditPersonal || isProfessionalEditable);
-  const generateEmpCode = () => `EMP${Math.floor(1000 + Math.random() * 9000)}`;
+  const canEditPersonal =
+    !isEditMode || ["HR", "ADMIN"].includes(role) || isOwnProfile;
+  const canSave = !isEditMode || canEditPersonal || isProfessionalEditable;
+  const empPrefix = process.env.REACT_APP_EMP_PREFIX || "EMP";
+
+const generateEmpCode = () =>
+  `${empPrefix}${Math.floor(1000 + Math.random() * 9000)}`;
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= 768);
@@ -84,16 +88,16 @@ const EmployeeProfileEdit = () => {
             data.employmentType || ""
           );
           setValue("professionalDetails.dateOfJoining", data.joiningDate || "");
-          
+
           const roleNameToId = {
-            "ADMIN": "1",
-            "HR": "2",
-            "MANAGER": "3",
-            "USER": "4"
+            ADMIN: "1",
+            HR: "2",
+            MANAGER: "3",
+            USER: "4",
           };
-          
+
           const employeeRole = data.role || "USER";
-          
+
           // Convert role name to ID for select dropdown
           const roleId = roleNameToId[employeeRole] || "4";
           setValue("professionalDetails.role", roleId);
@@ -222,6 +226,7 @@ const EmployeeProfileEdit = () => {
             alignItems: "center",
             gap: theme.spacing.lg,
             flexWrap: "wrap",
+            flexDirection: isMobile ? "column" : "row",
             marginBottom: theme.spacing.lg,
           }}
         >
@@ -283,7 +288,12 @@ const EmployeeProfileEdit = () => {
               📷
             </label>
           </div>
-          <div style={{ flex: 1 }}>
+          <div
+            style={{
+              flex: isMobile ? "0 0 100%" : "0 0 50%",
+              maxWidth: isMobile ? "100%" : "50%",
+            }}
+          >
             <Input
               label="Full Name"
               name="personalDetails.fullName"

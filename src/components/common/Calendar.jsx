@@ -1,3 +1,4 @@
+// Updated Calendar.jsx
 import { useState, useEffect } from "react";
 
 const Calendar = ({
@@ -145,7 +146,7 @@ const Calendar = ({
       const targetIsPast = cellEl.dataset.ispast === "true";
       const targetDayNum = Number.parseInt(cellEl.dataset.daynum, 10);
 
-      if (!targetIsPast && onSelectionChange && isSelectionMode) {
+      if (!targetIsPast && onSelectionChange && isSelectionMode && isSelecting) {
         onSelectionChange(targetDateStr, "hover");
         if (targetDayNum === daysInMonth) {
           onEdgeHover && onEdgeHover("next", targetDayNum);
@@ -156,6 +157,9 @@ const Calendar = ({
 
   const handleTouchEnd = () => {
     setIsTouching(false);
+    if (onSelectionChange && isSelectionMode && isSelecting) {
+      onSelectionChange(null, "end");
+    }
   };
 
   const getCellStyle = (dayInfo) => {

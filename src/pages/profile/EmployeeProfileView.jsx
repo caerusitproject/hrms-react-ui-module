@@ -263,7 +263,7 @@ const EmployeeProfileView = () => {
                 color: theme.colors.text.secondary,
               }}
             >
-              Employee ID {employee.professionalDetails?.employeeId || "N/A"}
+              Employee ID : <strong>{employee.professionalDetails?.empCode || "N/A"}</strong>
             </p>
           </div>
         </div>

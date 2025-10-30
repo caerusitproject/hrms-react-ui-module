@@ -200,7 +200,7 @@ const SideNav = ({ collapsed, onToggle }) => {
                     color: theme.colors.text.secondary,
                   }}
                 >
-                  Role: {user.role || "N/A"}
+                  Role: {user.role === "USER" ? "Employee" : user.role || "N/A"}
                 </div>
               </div>
             </div>

@@ -25,7 +25,7 @@ const Home = () => {
  const quickActions = [
   {
     label: "View Profile",
-    path: "/employee-profile",
+     path: `/employee-profile/${user?.id}`,
     icon: <PersonOutlineIcon />,
     roles: ["ADMIN", "HR", "MANAGER", "USER"],
   },
@@ -175,7 +175,7 @@ const Home = () => {
               key={index}
               onMouseEnter={() => setHoveredButton(index)}
               onMouseLeave={() => setHoveredButton(null)}
-              onClick={() => console.log(`Navigate to ${action.path}`)}
+              onClick={() => navigate(action.path)}
               style={{
                 background: action.featured
                   ? `${theme.colors.primaryLight}34`
