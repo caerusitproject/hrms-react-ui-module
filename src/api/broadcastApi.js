@@ -1,6 +1,5 @@
 import config from "../config/config";
-import axios from "../utils/axiosInterceptor";
-import { getCookie } from "../utils/cookiesUtil";
+import axios from 'axios';import { getCookie } from "../utils/cookiesUtil";
 
 const LOCAL_API = "http://localhost:3000/api";
 

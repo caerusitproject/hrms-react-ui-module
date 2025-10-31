@@ -1,7 +1,8 @@
 // src/components/AppRoutes.jsx
 import React, { Suspense, lazy } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate,useLocation } from "react-router-dom";
 import { Outlet } from "react-router-dom";
+import { useState,useEffect } from "react";
 import { useTokenRefresh } from "../hooks/useTokenRefresh";
 import { useAuth } from "../hooks/useAuth";
 import CustomLoader from "../components/common/CustomLoader";
@@ -23,16 +24,27 @@ const Dashboard = lazy(() => import("../pages/dashboard/Dashboard"));
 const Attendance = lazy(() => import("../pages/leave-management/Attendance"));
 const Leave = lazy(() => import("../pages/leave-management/Leave"));
 const Broadcast = lazy(() => import("../pages/broadcast/Broadcast"));
-const Payroll = lazy(()=> import("../pages/payroll/Payroll"))
-const EmailTemplateManager = lazy(()=> import("../pages/email-templete/EmailTemplateManager"))
-const SendMailPage =  lazy(()=> import("../pages/email-templete/SendMailPage"))
+const Payroll = lazy(() => import("../pages/payroll/Payroll"));
+const EmailTemplateManager = lazy(() =>
+  import("../pages/email-templete/EmailTemplateManager")
+);
+const SendMailPage = lazy(() => import("../pages/email-templete/SendMailPage"));
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+};
 const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
   useTokenRefresh();
   return (
     <div className="app">
       <Suspense fallback={<CustomLoader />}>
+      <ScrollToTop />
         <Routes>
           {/* Root redirect to login */}
           <Route path="/" element={<Navigate to="/login" replace />} />
@@ -83,16 +95,38 @@ const AppRoutes = () => {
             <Route
               path="employee"
               element={
-                <ProtectedRoute requiredRoles={["ADMIN", "HR", "MANAGER"]}>
+                <ProtectedRoute
+                  requiredRoles={["ADMIN", "HR", "MANAGER", "USER"]}
+                >
                   <Suspense fallback={<CustomLoader />}>
                     <Outlet />
                   </Suspense>
                 </ProtectedRoute>
               }
             >
-              <Route path="create" element={<EmployeeProfileEdit />} />
-              <Route path="edit/:id" element={<EmployeeProfileEdit />} />
+              {/* Create route — restricted to ADMIN, HR, MANAGER */}
+              <Route
+                path="create"
+                element={
+                  <ProtectedRoute requiredRoles={["ADMIN", "HR",]}>
+                    <EmployeeProfileEdit />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Edit route — accessible by all (ADMIN, HR, MANAGER, USER) */}
+              <Route
+                path="edit/:id"
+                element={
+                  <ProtectedRoute
+                    requiredRoles={["ADMIN", "HR", "MANAGER", "USER"]}
+                  >
+                    <EmployeeProfileEdit />
+                  </ProtectedRoute>
+                }
+              />
             </Route>
+
             <Route
               path="employee-profile/:id"
               element={

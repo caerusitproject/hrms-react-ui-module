@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { EmployeeAPI } from "../../api/employeeApi";
@@ -7,6 +7,7 @@ import { theme } from "../../theme/theme";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import CustomLoader from "../../components/common/CustomLoader";
+import { ROLE_OPTIONS, ROLE_IDS } from "../../utils/roles";
 
 const EmployeeProfileEdit = () => {
   const { id } = useParams();
@@ -21,14 +22,21 @@ const EmployeeProfileEdit = () => {
     handleSubmit,
     setValue,
     watch,
+    control,
     formState: { errors },
   } = useForm();
+  const watchMobile = useWatch({
+    control,
+    name: "personalDetails.mobile",
+  });
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [departments, setDepartments] = useState([]);
   const [managers, setManagers] = useState([]);
+  const [currentDepartmentId, setCurrentDepartmentId] = useState(null);
+  const [currentManagerId, setCurrentManagerId] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -40,8 +48,21 @@ const EmployeeProfileEdit = () => {
   const canSave = !isEditMode || canEditPersonal || isProfessionalEditable;
   const empPrefix = process.env.REACT_APP_EMP_PREFIX || "EMP";
 
-const generateEmpCode = () =>
-  `${empPrefix}${Math.floor(1000 + Math.random() * 9000)}`;
+  const generateEmpCode = () =>
+    `${empPrefix}${Math.floor(1000 + Math.random() * 9000)}`;
+
+  const onError = (errors) => {
+    const firstErrorKey = Object.keys(errors)[0];
+    if (firstErrorKey) {
+      const element = document.querySelector(
+        `input[name="${firstErrorKey}"], select[name="${firstErrorKey}"]`
+      );
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+        element.focus();
+      }
+    }
+  };
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= 768);
@@ -53,13 +74,15 @@ const generateEmpCode = () =>
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [deptRes, mgrRes] = await Promise.all([
-          EmployeeAPI.getDepartments(),
-          EmployeeAPI.getAllManagers(),
-        ]);
+        if (isProfessionalEditable) {
+          const [deptRes, mgrRes] = await Promise.all([
+            EmployeeAPI.getDepartments(),
+            EmployeeAPI.getAllManagers(),
+          ]);
 
-        setDepartments(deptRes || []);
-        setManagers(mgrRes?.data || []);
+          setDepartments(deptRes || []);
+          setManagers(mgrRes?.data || []);
+        }
 
         if (isEditMode) {
           const data = await EmployeeAPI.fetchEmployeeData(id);
@@ -72,15 +95,34 @@ const generateEmpCode = () =>
           setValue("personalDetails.address", data.address || "");
           setValue("personalDetails.city", data.city || "");
           setValue("personalDetails.country", data.country || "");
+          setValue("personalDetails.mobile", data.mobile || "");
+          setValue("personalDetails.phone", data.phone || "");
           setValue("professionalDetails.designation", data.designation || "");
-          setValue(
-            "professionalDetails.department",
-            data.departmentId ? data.departmentId.toString() : ""
-          );
-          setValue(
-            "professionalDetails.reportingManager",
-            data.managerId ? data.managerId.toString() : ""
-          );
+
+          setCurrentDepartmentId(data.departmentId);
+          setCurrentManagerId(data.managerId);
+
+          if (isProfessionalEditable) {
+            // Editable users (HR/Admin) — keep using IDs for dropdowns
+            setValue(
+              "professionalDetails.department",
+              data.departmentId ? data.departmentId.toString() : ""
+            );
+            setValue(
+              "professionalDetails.reportingManager",
+              data.managerId ? data.managerId.toString() : ""
+            );
+          } else {
+            // Non-editable users — show names instead of IDs
+            setValue(
+              "professionalDetails.department",
+              data?.department?.departmentName || ""
+            );
+            setValue(
+              "professionalDetails.reportingManager",
+              data?.Manager?.name || ""
+            );
+          }
           setValue("professionalDetails.idNumber", data.idNumber || "");
           setValue("professionalDetails.email", data.email || "");
           setValue(
@@ -89,20 +131,21 @@ const generateEmpCode = () =>
           );
           setValue("professionalDetails.dateOfJoining", data.joiningDate || "");
 
-          const roleNameToId = {
-            ADMIN: "1",
-            HR: "2",
-            MANAGER: "3",
-            USER: "4",
+          const nameToId = {
+            ADMIN: ROLE_IDS.ADMIN,
+            HR: ROLE_IDS.HR,
+            MANAGER: ROLE_IDS.MANAGER,
+            USER: ROLE_IDS.EMPLOYEE, // USER → EMPLOYEE
           };
-
-          const employeeRole = data.role || "USER";
-
-          // Convert role name to ID for select dropdown
-          const roleId = roleNameToId[employeeRole] || "4";
+          console.log(data.roles?.[0]?.role)
+         
+          const roleId = nameToId[data.roles?.[0]?.role] ?? ROLE_IDS.EMPLOYEE;
+           console.log(roleId)
           setValue("professionalDetails.role", roleId);
         } else {
           setValue("professionalDetails.empCode", generateEmpCode());
+          setValue("professionalDetails.role", 4);
+          setValue("professionalDetails.employmentType", "Full-time");
         }
       } catch (err) {
         setError(err.message);
@@ -125,17 +168,34 @@ const generateEmpCode = () =>
         address: data.personalDetails?.address,
         city: data.personalDetails?.city,
         country: data.personalDetails?.country,
+        mobile: data.personalDetails?.mobile,
+        phone: data.personalDetails?.phone,
         email: data.professionalDetails?.email,
         idNumber: data.professionalDetails?.idNumber,
         designation: data.professionalDetails?.designation,
-        departmentId: parseInt(data.professionalDetails?.department),
         employmentType: data.professionalDetails?.employmentType,
         joiningDate: data.professionalDetails?.dateOfJoining,
         roleIds: parseInt(data.professionalDetails?.role),
       };
 
+      const getDepartmentId = () =>
+        isEditMode && !isProfessionalEditable
+          ? currentDepartmentId
+          : parseInt(data.professionalDetails?.department || null);
+      const getManagerId = () =>
+        isEditMode && !isProfessionalEditable
+          ? currentManagerId
+          : parseInt(data.professionalDetails?.reportingManager || null);
+
+      apiPayload.departmentId = getDepartmentId();
+      apiPayload.managerId = getManagerId();
+
       if (!isEditMode) {
         apiPayload.password = data.professionalDetails?.password;
+        apiPayload.empCode =
+          data.professionalDetails?.empCode || generateEmpCode();
+        // apiPayload.status = "Active";
+        // apiPayload.state = "OFFER_CREATED";
       }
 
       if (isEditMode) {
@@ -180,13 +240,66 @@ const generateEmpCode = () =>
     ...managers.map((m) => ({ value: m.id, label: m.name })),
   ];
 
-  const roleOptions = [
-    { value: "", label: "Select Role" },
-    { value: 1, label: "Admin" },
-    { value: 2, label: "HR" },
-    { value: 3, label: "Manager" },
-    { value: 4, label: "User" },
+  const roleOptions = ROLE_OPTIONS;
+
+  const employmentTypeOptions = [
+    { value: "Full-time", label: "Full-time" },
+    { value: "Part-time", label: "Part-time" },
+    { value: "Contractual", label: "Contractual" },
+    { value: "Other", label: "Other" },
   ];
+
+  const genderTypeOptions = [
+    { value: "Male", label: "Male" },
+    { value: "Female", label: "Female" },
+    { value: "Other", label: "Other" },
+  ];
+  const validateAge = (dob) => {
+    if (!dob) return "Date of birth is required";
+    const birth = new Date(dob);
+    const today = new Date();
+    const age =
+      today.getFullYear() -
+      birth.getFullYear() -
+      (today < new Date(today.getFullYear(), birth.getMonth(), birth.getDate())
+        ? 1
+        : 0);
+    return age >= 18 || "Employee must be at least 18 years old";
+  };
+
+  const validateMobile = (mobile) => {
+    if (!mobile) return true;
+    if (!mobile.startsWith("+91")) return "Mobile number must start with +91";
+    const digits = mobile.replace("+91", "");
+    if (digits.length !== 10 || !/^\d{10}$/.test(digits)) {
+      return "Mobile number must be 10 digits after +91";
+    }
+    return true;
+  };
+
+  const validatePhone = (phone) => {
+    if (!phone) return true;
+    if (!phone.startsWith("+91")) return "Phone number must start with +91";
+    const digits = phone.replace("+91", "");
+    if (digits.length !== 10 || !/^\d{10}$/.test(digits)) {
+      return "Phone number must be 10 digits after +91";
+    }
+    if (phone === watchMobile) {
+      return "Alternative phone number cannot be the same as mobile number";
+    }
+    return true;
+  };
+
+  const maritalStatusOptions = [
+    { value: "", label: "Select Marital Status" },
+    { value: "Single", label: "Single" },
+    { value: "Married", label: "Married" },
+    { value: "Divorced", label: "Divorced" },
+    { value: "Widowed", label: "Widowed" },
+  ];
+
+  const isProfessionalFieldDisabled = isEditMode && !isProfessionalEditable;
+  const isPersonalFieldDisabled = isEditMode && !canEditPersonal;
 
   return (
     <>
@@ -215,147 +328,195 @@ const generateEmpCode = () =>
           {isEditMode ? "Edit Employee Profile" : "Create Employee Profile"}
         </h1>
 
-        {/* Avatar + Name */}
-        <div
-          style={{
-            backgroundColor: theme.colors.surface,
-            borderRadius: theme.borderRadius.large,
-            padding: theme.spacing.lg,
-            boxShadow: theme.shadows.small,
-            display: "flex",
-            alignItems: "center",
-            gap: theme.spacing.lg,
-            flexWrap: "wrap",
-            flexDirection: isMobile ? "column" : "row",
-            marginBottom: theme.spacing.lg,
-          }}
-        >
-          <div style={{ position: "relative" }}>
-            <div
-              style={{
-                width: 100,
-                height: 100,
-                borderRadius: "50%",
-                backgroundColor: theme.colors.surfaceVariant,
-                border: `3px solid ${theme.colors.lightGray}`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontWeight: "600",
-                fontSize: "24px",
-                color: theme.colors.text.secondary,
-                backgroundImage: avatarPreview
-                  ? `url(${avatarPreview})`
-                  : undefined,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
-            >
-              {!avatarPreview &&
-                (watch("personalDetails.fullName") || "U")
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
-            </div>
-            <input
-              id="avatar-upload"
-              type="file"
-              accept="image/*"
-              onChange={(e) =>
-                setAvatarPreview(URL.createObjectURL(e.target.files[0]))
-              }
-              disabled={isEditMode && !canEditPersonal}
-              style={{ display: "none" }}
-            />
-            <label
-              htmlFor="avatar-upload"
-              style={{
-                position: "absolute",
-                bottom: 0,
-                right: 0,
-                backgroundColor: theme.colors.primary,
-                color: "#fff",
-                borderRadius: "50%",
-                width: 28,
-                height: 28,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                cursor: isEditMode && !canEditPersonal ? "default" : "pointer",
-                opacity: isEditMode && !canEditPersonal ? 0.5 : 1,
-              }}
-            >
-              📷
-            </label>
-          </div>
+        {/* Avatar */}
+        {isEditMode && (
           <div
             style={{
-              flex: isMobile ? "0 0 100%" : "0 0 50%",
-              maxWidth: isMobile ? "100%" : "50%",
+              backgroundColor: theme.colors.surface,
+              borderRadius: theme.borderRadius.large,
+              padding: theme.spacing.lg,
+              boxShadow: theme.shadows.small,
+              display: "flex",
+              alignItems: "center",
+              gap: theme.spacing.lg,
+              flexWrap: "wrap",
+              flexDirection: isMobile ? "column" : "row",
+              marginBottom: theme.spacing.lg,
+              justifyContent: isMobile ? "center" : "flex-start",
             }}
           >
+            <div style={{ position: "relative" }}>
+              <div
+                style={{
+                  width: 100,
+                  height: 100,
+                  borderRadius: "50%",
+                  backgroundColor: theme.colors.surfaceVariant,
+                  border: `3px solid ${theme.colors.lightGray}`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: "600",
+                  fontSize: "24px",
+                  color: theme.colors.text.secondary,
+                  backgroundImage: avatarPreview
+                    ? `url(${avatarPreview})`
+                    : undefined,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }}
+              >
+                {!avatarPreview &&
+                  (watch("personalDetails.fullName") || "U")
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
+              </div>
+              {isEditMode && (
+                <>
+                  <input
+                    id="avatar-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) =>
+                      setAvatarPreview(URL.createObjectURL(e.target.files[0]))
+                    }
+                    disabled={!canEditPersonal}
+                    style={{ display: "none" }}
+                  />
+                  <label
+                    htmlFor="avatar-upload"
+                    style={{
+                      position: "absolute",
+                      bottom: 0,
+                      right: 0,
+                      backgroundColor: theme.colors.primary,
+                      color: "#fff",
+                      borderRadius: "50%",
+                      width: 28,
+                      height: 28,
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      cursor: !canEditPersonal ? "default" : "pointer",
+                      opacity: !canEditPersonal ? 0.5 : 1,
+                    }}
+                  >
+                    📷
+                  </label>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+        {/* Personal Details */}
+        <FormCard title="Personal Details">
+          <div style={gridStyle}>
             <Input
               label="Full Name"
               name="personalDetails.fullName"
               register={register}
               required
-              disabled={isEditMode && !canEditPersonal}
+              rules={{
+                required: "Full Name is required",
+                validate: (value) => {
+                  const trimmed = value?.trim();
+                  return (
+                    trimmed?.length >= 3 ||
+                    "Full Name must be at least 3 character"
+                  );
+                },
+              }}
+              disabled={isPersonalFieldDisabled}
               errors={errors}
             />
-          </div>
-        </div>
 
-        {/* Personal Details */}
-        <FormCard title="Personal Details">
-          <div style={gridStyle}>
             <Input
               label="Date of Birth"
               name="personalDetails.dateOfBirth"
               type="date"
               register={register}
-              disabled={isEditMode && !canEditPersonal}
+              required
+              rules={{
+                validate: validateAge,
+              }}
+              disabled={isPersonalFieldDisabled}
               errors={errors}
             />
             <Input
               label="Gender"
               name="personalDetails.gender"
+              type="select"
+              options={genderTypeOptions}
               register={register}
-              disabled={isEditMode && !canEditPersonal}
+              required
+              disabled={isPersonalFieldDisabled}
               errors={errors}
             />
-            <Input
-              label="Marital Status"
-              name="personalDetails.maritalStatus"
-              register={register}
-              disabled={isEditMode && !canEditPersonal}
-              errors={errors}
-            />
+
             <Input
               label="Father's Name"
               name="personalDetails.fatherName"
               register={register}
-              disabled={isEditMode && !canEditPersonal}
+              disabled={isPersonalFieldDisabled}
               errors={errors}
             />
             <Input
               label="Address"
               name="personalDetails.address"
               register={register}
-              disabled={isEditMode && !canEditPersonal}
+              required
+              disabled={isPersonalFieldDisabled}
               errors={errors}
             />
             <Input
               label="City"
               name="personalDetails.city"
               register={register}
-              disabled={isEditMode && !canEditPersonal}
+              disabled={isPersonalFieldDisabled}
               errors={errors}
             />
             <Input
               label="Country"
               name="personalDetails.country"
               register={register}
-              disabled={isEditMode && !canEditPersonal}
+              required
+              disabled={isPersonalFieldDisabled}
+              errors={errors}
+            />
+            <Input
+              label="Mobile"
+              name="personalDetails.mobile"
+              type="tel"
+              register={register}
+              required
+              rules={{
+                validate: validateMobile,
+              }}
+              disabled={isPersonalFieldDisabled}
+              errors={errors}
+              placeholder="+91xxxxxxxxxx"
+            />
+            <Input
+              label="Alternative Mobile"
+              name="personalDetails.phone"
+              type="tel"
+              register={register}
+              rules={{
+                validate: validatePhone,
+              }}
+              disabled={isPersonalFieldDisabled}
+              errors={errors}
+              placeholder="+91xxxxxxxxxx"
+            />
+
+            <Input
+              label="Marital Status"
+              name="personalDetails.maritalStatus"
+              type="select"
+              options={maritalStatusOptions}
+              register={register}
+              disabled={isPersonalFieldDisabled}
               errors={errors}
             />
           </div>
@@ -364,11 +525,49 @@ const generateEmpCode = () =>
         {/* Professional Details */}
         <FormCard title="Professional Details">
           <div style={gridStyle}>
+            {/* {!isEditMode && (
+              <Input
+                label="Employee Code"
+                name="professionalDetails.empCode"
+                disabled
+                register={register}
+                errors={errors}
+              />
+            )} */}
+            <Input
+              label="Role"
+              name="professionalDetails.role"
+              type="select"
+              options={roleOptions}
+              register={register}
+              required
+              disabled={isProfessionalFieldDisabled}
+              errors={errors}
+            />
+            <Input
+              label="Department"
+              name="professionalDetails.department"
+              type={isProfessionalEditable ? "select" : "text"}
+              options={departmentOptions}
+              register={register}
+              required
+              disabled={isProfessionalFieldDisabled}
+              errors={errors}
+            />
             <Input
               label="Designation"
               name="professionalDetails.designation"
               register={register}
-              disabled={isEditMode && !isProfessionalEditable}
+              required
+              disabled={isProfessionalFieldDisabled}
+              errors={errors}
+            />
+            <Input
+              label="ID Number"
+              name="professionalDetails.idNumber"
+              register={register}
+              required
+              disabled={isProfessionalFieldDisabled}
               errors={errors}
             />
             <Input
@@ -376,14 +575,8 @@ const generateEmpCode = () =>
               name="professionalDetails.email"
               type="email"
               register={register}
-              disabled={isEditMode && !isProfessionalEditable}
-              errors={errors}
-            />
-            <Input
-              label="ID Number"
-              name="professionalDetails.idNumber"
-              register={register}
-              disabled={isEditMode && !isProfessionalEditable}
+              required
+              disabled={isProfessionalFieldDisabled}
               errors={errors}
             />
 
@@ -401,48 +594,31 @@ const generateEmpCode = () =>
             )}
 
             <Input
-              label="Department"
-              name="professionalDetails.department"
+              label="Employment Type"
+              name="professionalDetails.employmentType"
               type="select"
-              options={departmentOptions}
+              options={employmentTypeOptions}
               register={register}
-              disabled={isEditMode && !isProfessionalEditable}
+              disabled={isProfessionalFieldDisabled}
               errors={errors}
             />
 
             <Input
               label="Reporting Manager"
               name="professionalDetails.reportingManager"
-              type="select"
+              type={isProfessionalEditable ? "select" : "text"}
               options={managerOptions}
               register={register}
-              disabled={isEditMode && !isProfessionalEditable}
+              disabled={isProfessionalFieldDisabled}
               errors={errors}
             />
 
-            <Input
-              label="Employment Type"
-              name="professionalDetails.employmentType"
-              register={register}
-              disabled={isEditMode && !isProfessionalEditable}
-              errors={errors}
-            />
             <Input
               label="Date of Joining"
               name="professionalDetails.dateOfJoining"
               type="date"
               register={register}
-              disabled={isEditMode && !isProfessionalEditable}
-              errors={errors}
-            />
-
-            <Input
-              label="Role"
-              name="professionalDetails.role"
-              type="select"
-              options={roleOptions}
-              register={register}
-              disabled={isEditMode && !isProfessionalEditable}
+              disabled={isProfessionalFieldDisabled}
               errors={errors}
             />
           </div>
@@ -471,7 +647,7 @@ const generateEmpCode = () =>
         </Button>
         <Button
           type="primary"
-          onClick={handleSubmit(onSubmit)}
+          onClick={handleSubmit(onSubmit, onError)}
           disabled={saving || (isEditMode && !canSave)}
         >
           {saving ? "Saving..." : isEditMode ? "Save Changes" : "Create"}

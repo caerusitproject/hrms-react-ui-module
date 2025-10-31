@@ -1,6 +1,5 @@
 import config from "../config/config";
-import apiService from "../utils/apiService";
-import axios from "../utils/axiosInterceptor";
+import axios from 'axios';
 import { getCookie } from "../utils/cookiesUtil";
 
 const LOCAL_API = "http://localhost:3000/api";
@@ -23,7 +22,7 @@ export const EmployeeAPI = {
       });
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || "Login failed (Invalid email or password)");
+      throw new Error(error.response?.data?.error || error.response?.data?.error.message || "Login failed (Invalid email or password)");
     }
   },
 
@@ -74,7 +73,7 @@ export const EmployeeAPI = {
       });
       return response.data;
     } catch (error) {
-      console.error("Error fetching managers:", error.response?.data || error.message);
+      console.error("Error fetching managers:", error.response?.message || error.message);
       throw error;
     }
   },

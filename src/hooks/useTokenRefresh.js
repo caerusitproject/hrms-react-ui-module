@@ -17,6 +17,7 @@ export const useTokenRefresh = () => {
         if (refreshToken) {
           try {
             const response = await AuthApi.refreshAccessToken(refreshToken); // Fixed
+            console.log("file hooks")
             updateAccessToken(response.accessToken);
             if (response.refreshToken) {
               updateRefreshToken(response.refreshToken);

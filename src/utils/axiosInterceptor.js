@@ -70,7 +70,7 @@ axios.interceptors.response.use(
       try {
         // Call refresh token API
         const response = await AuthApi.refreshAccessToken(refreshToken);
-        
+         console.log("file hooks")
         // Update tokens in cookies
         updateAccessToken(response.accessToken);
         if (response.refreshToken) {

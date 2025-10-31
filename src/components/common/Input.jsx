@@ -10,11 +10,13 @@ const Input = ({
   type = "text", 
   register, 
   required = false, 
+  rules = {}, 
   errors, 
   disabled = false,
   options = [], // For select type: [{value: '', label: 'Select...'}]
   showPassword = false, // For password type: external state
   onTogglePassword, // For password type: toggle handler
+  placeholder = "",
   labelColor = theme.colors.text.secondary,
   inputColor = theme.colors.text.primary,
   defaultBorderColor = theme.colors.mediumGray,
@@ -28,6 +30,11 @@ const Input = ({
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const error = errors?.[name.split('.')[0]]?.[name.split('.')[1]] || errors?.[name];
+
+  const validationRules = {
+    ...(required && { required: `${label} is required` }),
+    ...rules
+  };
 
   const commonInputStyle = {
     width: "100%",
@@ -54,7 +61,7 @@ const Input = ({
       case "select":
         return (
           <select
-            {...register(name, { required: required ? `${label} is required` : false })}
+            {...register(name, validationRules)}
             disabled={disabled}
             onFocus={handleFocus}
             onBlur={handleBlur}
@@ -75,7 +82,7 @@ const Input = ({
         return (
           <div style={{ position: "relative" }}>
             <input
-              {...register(name, { required: required ? `${label} is required` : false })}
+              {...register(name, validationRules)}
               type={showPassword ? "text" : "password"}
               disabled={disabled}
               onFocus={handleFocus}
@@ -108,15 +115,16 @@ const Input = ({
             </button>
           </div>
         );
-      default: // text, email, date, etc.
+      default: // text, email, date, tel, etc.
         return (
           <input
             type={type}
-            {...register(name, { required: required ? `${label} is required` : false })}
+            {...register(name, validationRules)}
             disabled={disabled}
             onFocus={handleFocus}
             onBlur={handleBlur}
             style={commonInputStyle}
+            placeholder={placeholder}
             {...rest}
           />
         );

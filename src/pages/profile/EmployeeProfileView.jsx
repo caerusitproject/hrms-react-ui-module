@@ -45,24 +45,24 @@ const EmployeeProfileView = () => {
     const loadEmployeeData = async () => {
       try {
         setLoading(true);
-        const [deptRes, mgrRes, empRes] = await Promise.all([
-          EmployeeAPI.getDepartments(),
-          EmployeeAPI.getAllManagers(),
+        const [empRes] = await Promise.all([
+          // EmployeeAPI.getDepartments(),
+          // EmployeeAPI.getAllManagers(),
           EmployeeAPI.fetchEmployeeData(id),
         ]);
 
-        const deptResData = Array.isArray(deptRes) ? deptRes : [];
-        const mgrResData = Array.isArray(mgrRes?.data) ? mgrRes.data : [];
-        setDepartments(deptResData);
-        setManagers(mgrResData);
+        // const deptResData = Array.isArray(deptRes) ? deptRes : [];
+        // const mgrResData = Array.isArray(mgrRes?.data) ? mgrRes.data : [];
+        // setDepartments(deptResData);
+        // setManagers(mgrResData);
 
         const data = empRes;
-        const dept =
-          deptResData.find((d) => Number(d.id) === Number(data.departmentId))
-            ?.departmentName || "N/A";
-        const mgr = mgrResData.find(
-          (m) => Number(m.id) === Number(data.managerId)
-        )?.name;
+        // const dept =
+        //   deptResData.find((d) => Number(d.id) === Number(data.departmentId))
+        //     ?.departmentName || "N/A";
+        // const mgr = mgrResData.find(
+        //   (m) => Number(m.id) === Number(data.managerId)
+        // )?.name;
         const age = calculateAge(data.dateOfBirth);
 
         const transformedData = {
@@ -82,11 +82,11 @@ const EmployeeProfileView = () => {
           },
           professionalDetails: {
             designation: data.designation || "N/A",
-            department: dept,
+            department: data?.department?.departmentName,
             dateOfJoining: data.joiningDate
               ? new Date(data.joiningDate).toLocaleDateString()
               : "N/A",
-            reportingManager: mgr,
+           reportingManager: data?.Manager?.name || "",
             employeeId: data.id || "N/A",
             empCode: data.empCode || "N/A",
             employmentType: data.employmentType || "N/A",
@@ -332,6 +332,7 @@ const EmployeeProfileView = () => {
             "Employee Code",
             employee.professionalDetails?.empCode
           )}
+          {createGridItem("Email Address", employee.professionalDetails?.email)}
           {createGridItem("ID Number", employee.professionalDetails?.idNumber)}
           {createGridItem(
             "Designation",
@@ -349,8 +350,8 @@ const EmployeeProfileView = () => {
             "Date of Joining",
             employee.professionalDetails?.dateOfJoining
           )}
-          {createGridItem("Role", employee.professionalDetails?.role)}
-          {createGridItem("Email Address", employee.professionalDetails?.email)}
+          {/* {createGridItem("Role", employee.professionalDetails?.role)} */}
+          
           {employee.professionalDetails?.reportingManager &&
             createGridItem(
               "Reporting Manager",
