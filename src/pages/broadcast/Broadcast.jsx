@@ -30,7 +30,7 @@ const Broadcast = () => {
     try {
       const res = await BroadcastAPI.getAll(filterParam);
       setBroadcasts(
-        res.map((b) => ({ ...b, expanded: false })) // add expanded for UI
+        res.data.map((b) => ({ ...b, expanded: false })) // add expanded for UI
       );
     } catch (err) {
       console.error("Failed to fetch broadcasts", err);
