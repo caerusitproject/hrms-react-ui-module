@@ -30,6 +30,21 @@ const EmployeeProfileEdit = () => {
     name: "personalDetails.mobile",
   });
 
+  const sectionStyle = (highlight) => ({
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius.large,
+      padding: theme.spacing.xl,
+      marginBottom: theme.spacing.lg,
+      boxShadow: highlight ? theme.shadows.medium : theme.shadows.small,
+      borderRight: highlight ? `4px solid ${theme.colors.primary}` : "none",
+      transition: theme.transitions.medium,
+    });
+
+     const dummyDocuments = [
+    { name: "Offer Letter", icon: "📄" },
+    { name: "ID Proof", icon: "🆔" },
+    { name: "Tax Document", icon: "📋" },
+  ];
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -300,6 +315,7 @@ const EmployeeProfileEdit = () => {
 
   const isProfessionalFieldDisabled = isEditMode && !isProfessionalEditable;
   const isPersonalFieldDisabled = isEditMode && !canEditPersonal;
+  const isSupportingDocsEditable =  isProfessionalEditable;
 
   return (
     <>
@@ -623,6 +639,61 @@ const EmployeeProfileEdit = () => {
             />
           </div>
         </FormCard>
+{isSupportingDocsEditable &&(
+        <div style={sectionStyle(false)}>
+                <h2
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: 700,
+                    marginBottom: theme.spacing.md,
+                  }}
+                >
+                  Supportive Documents
+                </h2>
+                {dummyDocuments.map((doc, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      backgroundColor: theme.colors.background,
+                      padding: theme.spacing.sm,
+                      borderRadius: theme.borderRadius.small,
+                      border: `1px solid ${theme.colors.lightGray}`,
+                      marginBottom: theme.spacing.sm,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: theme.spacing.sm,
+                      }}
+                    >
+                      <span style={{ fontSize: "18px" }}>{doc.icon}</span>
+                      <span
+                        style={{ fontWeight: 600, color: theme.colors.text.primary }}
+                      >
+                        {doc.name}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => alert(`Viewing ${doc.name}`)}
+                      style={{
+                        backgroundColor: "transparent",
+                        color: theme.colors.warning,
+                        border: "none",
+                        fontWeight: 500,
+                        cursor: "pointer",
+                        textDecoration: "underline",
+                      }}
+                    >
+                      View
+                    </button>
+                  </div>
+                ))}
+              </div>)}
       </div>
 
       {/* Fixed Bottom Buttons */}

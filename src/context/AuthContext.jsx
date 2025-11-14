@@ -68,7 +68,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
       return true;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Login error:', error.response?.data?.message);
       setError(error.response?.data?.message || error.message || 'Login failed (Invalid email or password) ');
       setLoading(false);
       return false;
@@ -78,7 +78,9 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setIsAuthenticated(false);
     setUser(null);
-    localStorage.clear();
+    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('user');
+    //localStorage.clear();
   };
 
   useEffect(() => {

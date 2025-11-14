@@ -1,23 +1,26 @@
-// src/hooks/useTokenRefresh.js
 import { useEffect } from 'react';
 import { getAccessToken, getRefreshToken, updateAccessToken, updateRefreshToken, clearAuthData, isAccessTokenExpired } from '../pages/auth/authStorage';
 import { AuthApi } from '../api/authApi'; // Fixed from EmployeeAPI
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-
+import { useLocation } from 'react-router-dom';
 export const useTokenRefresh = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { setIsAuthenticated, setUser, setError } = useAuth();
 
   useEffect(() => {
+    const publicPaths = ['/login', '/forgot-password', '/reset-password'];
+    const isPublic = publicPaths.some(path => location.pathname.startsWith(path));
+
+    if (isPublic) return; // 👈 Skip refresh logic for public routes
+
     const checkAndRefreshToken = async () => {
       if (isAccessTokenExpired()) {
         const refreshToken = getRefreshToken();
-        console.log("Access token expired, attempting to refresh..., refreshToken:", refreshToken);
         if (refreshToken) {
           try {
-            const response = await AuthApi.refreshAccessToken(refreshToken); // Fixed
-            console.log("file hooks")
+            const response = await AuthApi.refreshAccessToken(refreshToken);
             updateAccessToken(response.accessToken);
             if (response.refreshToken) {
               updateRefreshToken(response.refreshToken);
@@ -44,5 +47,5 @@ export const useTokenRefresh = () => {
     checkAndRefreshToken();
 
     return () => clearInterval(interval);
-  }, [navigate, setIsAuthenticated, setUser, setError]);
+  }, [navigate, setIsAuthenticated, setUser, setError, location.pathname]);
 };

@@ -33,20 +33,24 @@ const Login = () => {
     }
   }, [isAuthenticated, navigate]);
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  const success = await login(email, password);
+    const success = await login(email, password);
 
-  if (success) {
-    navigate("/home", { replace: true });
-  }
-};
+    if (success) {
+      navigate("/home", { replace: true });
+    }
+  };
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter") {
       handleSubmit(e);
     }
+  };
+
+  const handleForgotPasswordClick = () => {
+    navigate("/forgot-password");
   };
 
   return (
@@ -124,7 +128,7 @@ const Login = () => {
         </div>
 
         {/* Login Form */}
-        <div>
+        <form onSubmit={handleSubmit}>
           {/* Email input */}
           <div
             style={{
@@ -230,8 +234,9 @@ const Login = () => {
             </div>
           )}
 
+          {/* Submit Button */}
           <button
-            onClick={handleSubmit}
+            type="submit"
             className="btn-primary"
             disabled={loading}
             style={{
@@ -247,17 +252,36 @@ const Login = () => {
               cursor: loading ? "not-allowed" : "pointer",
               transition: "opacity 0.3s ease, transform 0.3s ease",
               letterSpacing: "0.5px",
+              marginBottom: "10px",
             }}
-            onMouseOver={(e) =>
-              !loading && (e.currentTarget.style.transform = "scale(1.05)")
-            }
-            onMouseOut={(e) =>
-              !loading && (e.currentTarget.style.transform = "scale(1)")
-            }
+            onMouseOver={(e) => !loading && (e.currentTarget.style.transform = "scale(1.05)")}
+            onMouseOut={(e) => !loading && (e.currentTarget.style.transform = "scale(1)")}
           >
             {loading ? "Signing In..." : "Sign In"}
           </button>
-        </div>
+
+          {/* Forgot Password Button */}
+          <button
+            type="button"
+            onClick={handleForgotPasswordClick}
+            disabled={loading}
+            style={{
+              width: "100%",
+              padding: isMobile ? "10px" : "12px",
+              fontSize: isMobile ? "14px" : "16px",
+              fontWeight: "500",
+              backgroundColor: "transparent",
+              color: theme.colors.primary,
+              border: "none",
+              cursor: "pointer",
+              textDecoration: "underline",
+              letterSpacing: "0.5px",
+              marginTop: isMobile ? "0" : "5px",
+            }}
+          >
+            Forgot Password?
+          </button>
+        </form>
 
         {/* Demo Info */}
         <div

@@ -22,7 +22,7 @@ import CustomLoader from "../../components/common/CustomLoader";
 const Dashboard = () => {
   const { user } = useAuth();
   const role = user?.role || "USER"; // default to USER if undefined
-  
+
   const navigate = useNavigate();
 
   // Team Activity Feed Data - now dynamic for HR/MANAGER/ADMIN
@@ -30,7 +30,7 @@ const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  
+
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -82,33 +82,51 @@ const Dashboard = () => {
   let quickOverview = [];
 
   if (role === "USER" && dashboardData) {
-    quickOverview = [
-      { label: "Pending Leave Requests", value: dashboardData.pendingLeaveCount.toString(), color: theme.colors.warning },
-      { label: "Attendance This Month", value: "20", color: theme.colors.success },
-    ];
-  } else if (role === "MANAGER" && dashboardData) {
-    quickOverview = [
-      { label: "Active Team Members", value: dashboardData.totalTeamMembers.toString(), color: theme.colors.success },
-      { label: "Pending Approvals", value: dashboardData.pendingLeaves.length.toString(), color: theme.colors.warning },
-      { label: "Attendance This Month", value: "20", color: theme.colors.success },
-      { label: "Pending Leave Requests", value: "2", color: theme.colors.warning },
-    ];
-  } else if ((role === "HR" || role === "ADMIN") && dashboardData) {
-    quickOverview = [
-      { label: "Total Employees", value: dashboardData.totalEmployees.toString(), color: theme.colors.primary },
-      { label: "Documents Shared", value: "35", color: theme.colors.primaryLight },
-      { label: "Attendance This Month", value: "20", color: theme.colors.success },
-      { label: "Pending Leave Requests", value: "2", color: theme.colors.warning },
-    ];
-  }
+  quickOverview = [
+    { label: "Pending Leave Requests", value: (dashboardData?.pendingLeaveCount ?? 0).toString(), color: theme.colors.warning },
+    { label: "Attendance This Month", value: "20", color: theme.colors.success },
+  ];
+} else if (role === "MANAGER" && dashboardData) {
+  quickOverview = [
+    { label: "Active Team Members", value: (dashboardData?.totalTeamMembers ?? 0).toString(), color: theme.colors.success },
+    { label: "Pending Approvals", value: (dashboardData?.pendingLeaves?.length ?? 0).toString(), color: theme.colors.warning },
+    { label: "Attendance This Month", value: "20", color: theme.colors.success },
+    { label: "Pending Leave Requests", value: "2", color: theme.colors.warning },
+  ];
+} else if ((role === "HR" || role === "ADMIN") && dashboardData) {
+  quickOverview = [
+    { label: "Total Employees", value: (dashboardData?.totalEmployees ?? 0).toString(), color: theme.colors.primary },
+    { label: "Documents Shared", value: "35", color: theme.colors.primaryLight },
+    { label: "Attendance This Month", value: "20", color: theme.colors.success },
+    { label: "Pending Leave Requests", value: "2", color: theme.colors.warning },
+  ];
+}
+
   // Upcoming Events Data - from broadcasts
-  const upcomingEvents = dashboardData ? 
-    (dashboardData.recentBroadcast || dashboardData.upcomingBroadcasts || []).map((b) => ({
-      id: b.id,
-      title: b.title,
-      date: new Date(b.createdAt).toDateString(),
-      color: theme.colors.primary,
-    })) : [];
+  let upcomingEvents = [];
+
+  if (dashboardData) {
+    const todayBroadcasts = dashboardData.upcomingBroadcasts || [];
+    
+    if (todayBroadcasts.length > 0) {
+      upcomingEvents = todayBroadcasts.map((b) => ({
+        id: b.id,
+        title: b.title,
+        date: new Date(b.createdAt).toDateString(),
+        color: theme.colors.primary,
+      }));
+    } else {
+      // When no broadcasts are found
+      upcomingEvents = [
+        {
+          id: "no-events",
+          title: dashboardData.recentBroadcast.message || "No events found",
+          date: "",
+          color: theme.colors.secondary || "#999", // optional fallback color
+        },
+      ];
+    }
+  }
 
   return (
     <div>
@@ -291,28 +309,31 @@ const Dashboard = () => {
                       alignItems: "flex-start",
                     }}
                   >
-                    <Box
-                      sx={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 1,
-                        bgcolor: "#FFF4F0",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
-                      }}
-                    >
+                    {/* ✅ Only show the calendar icon if this is a real event */}
+                    {event.id !== "no-events" && (
                       <Box
-                        component="span"
                         sx={{
-                          fontSize: "20px",
-                          color: event.color,
+                          width: 40,
+                          height: 40,
+                          borderRadius: 1,
+                          bgcolor: "#FFF4F0",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
                         }}
                       >
-                        📅
+                        <Box
+                          component="span"
+                          sx={{
+                            fontSize: "20px",
+                            color: event.color,
+                          }}
+                        >
+                          📅
+                        </Box>
                       </Box>
-                    </Box>
+                    )}
                     <Box>
                       <Typography
                         variant="body1"

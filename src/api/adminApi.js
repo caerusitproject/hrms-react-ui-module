@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const LOCAL_API = "http://localhost:3000/api";
+const LOCAL_API = process.env.BACKEND_API || 'http://localhost:3000/api';
 
 export const ConfigApi = {
     async get(empCode, month, year) {

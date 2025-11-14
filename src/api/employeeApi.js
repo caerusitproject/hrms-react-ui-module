@@ -2,7 +2,7 @@ import config from "../config/config";
 import axios from 'axios';
 import { getCookie } from "../utils/cookiesUtil";
 
-const LOCAL_API = "http://localhost:3000/api";
+const LOCAL_API = process.env.BACKEND_API || 'http://localhost:3000/api';
 
 // ✅ Always get latest token for Authorization header
 const getAuthHeaders = () => {
@@ -22,7 +22,7 @@ export const EmployeeAPI = {
       });
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.error || error.response?.data?.error.message || "Login failed (Invalid email or password)");
+      throw error;
     }
   },
 
@@ -53,14 +53,16 @@ export const EmployeeAPI = {
   },
 
   // ✅ Get all employees
-  async getAllEmployees() {
+  // EmployeeAPI.js
+  async getAllEmployees(page = 1, limit = 7) {
     try {
       const response = await axios.get(`${LOCAL_API}/employees/all`, {
         headers: getAuthHeaders(),
+        params: { page, limit },
       });
       return response.data;
     } catch (error) {
-      console.error("Error fetching employees:", error.response?.data || error.message);
+      console.error("Error:", error.response?.data || error.message);
       throw error;
     }
   },

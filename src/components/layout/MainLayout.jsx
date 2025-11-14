@@ -4,8 +4,10 @@ import SideNav from "./SideNav";
 import { theme } from "../../theme/theme";
 import { STORAGE_KEYS } from "../../utils/constants";
 import Footer from "../common/Footer";
-
+import Chatbot from "../common/Chatbot";
+import { useTokenRefresh } from "../../hooks/useTokenRefresh";
 const MainLayout = () => {
+   useTokenRefresh();
   const [sidenavCollapsed, setSidenavCollapsed] = useState(() => {
     return localStorage.getItem(STORAGE_KEYS.SIDEBAR_COLLAPSED) === "true";
   });
@@ -95,6 +97,7 @@ const MainLayout = () => {
         </div>
 
         <Footer />
+        <Chatbot />
       </div>
     </div>
   );

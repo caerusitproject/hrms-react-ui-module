@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { EmployeeAPI } from "../../api/employeeApi";
+import { ManagerAPI } from "../../api/managerApi";
 import { theme } from "../../theme/theme";
 import Button from "../../components/common/Button";
 import CustomLoader from "../../components/common/CustomLoader";
@@ -29,8 +30,8 @@ const Teamemployee = () => {
       }
       try {
         setLoading(true);
-        const data = await EmployeeAPI.getSubordinates(user.id);
-        setTeamMembers(data.subordinates || []);
+        const data = await ManagerAPI.getTeam(user.id);
+        setTeamMembers(data || []);
       } catch (err) {
         console.error("Error fetching team members:", err);
         setError(
@@ -165,7 +166,7 @@ const Teamemployee = () => {
                       marginTop: "2px",
                     }}
                   >
-                    Team Member
+                    {member.designation || "Team Member"}
                   </div>
                 </div>
               </div>
@@ -291,8 +292,8 @@ const Teamemployee = () => {
                   transition: theme.transitions.fast,
                 }}
                 onMouseOver={(e) =>
-                  (e.currentTarget.style.backgroundColor =
-                    theme.colors.background)
+                (e.currentTarget.style.backgroundColor =
+                  theme.colors.background)
                 }
                 onMouseOut={(e) =>
                   (e.currentTarget.style.backgroundColor = "transparent")

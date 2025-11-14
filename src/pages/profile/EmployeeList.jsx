@@ -11,6 +11,8 @@ const EmployeeList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [pagination, setPagination] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= 768);
@@ -18,31 +20,26 @@ const EmployeeList = () => {
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
-
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
         setLoading(true);
-        const data = await EmployeeAPI.getAllEmployees();
-        setEmployees(data || []);
+        const data = await EmployeeAPI.getAllEmployees(currentPage);
+        setEmployees(data.employees || []);
+        setPagination(data.pagination);
       } catch (err) {
-        console.error("Error fetching employees:", err);
-        setError(
-          err.message.includes("CORS")
-            ? "Failed to connect to the server. Please ensure the backend is configured to allow requests from this application."
-            : err.message
-        );
+        setError(err.message.includes("CORS") ? "CORS error" : err.message);
       } finally {
         setLoading(false);
       }
     };
-
     fetchEmployees();
-  }, []);
+  }, [currentPage]);
+
 
   const handleViewProfile = (id) => {
     let empId = employees.find(emp => emp.id === id)?.id;
-    
+
     navigate(`/employee-profile/${empId}`);
   };
 
@@ -201,6 +198,28 @@ const EmployeeList = () => {
               </div>
             </div>
           ))}
+          {pagination && (pagination.totalPages > 1) && (
+          <div style={{ display: "flex", justifyContent: "center",
+           gap: theme.spacing.sm, marginTop: theme.spacing.lg }}>
+            <Button
+              type="secondary"
+              onClick={() => setCurrentPage(pagination.prevPage)}
+              disabled={!pagination.hasPrevPage}
+            >
+              Previous
+            </Button>
+            <span style={{ alignSelf: "center" }}>
+              Page {pagination.currentPage} of {pagination.totalPages}
+            </span>
+            <Button
+              type="secondary"
+              onClick={() => setCurrentPage(pagination.nextPage)}
+              disabled={!pagination.hasNextPage}
+            >
+              Next
+            </Button>
+          </div>
+        )}
         </div>
       </div>
     );
@@ -311,8 +330,8 @@ const EmployeeList = () => {
                   transition: theme.transitions.fast,
                 }}
                 onMouseOver={(e) =>
-                  (e.currentTarget.style.backgroundColor =
-                    theme.colors.background)
+                (e.currentTarget.style.backgroundColor =
+                  theme.colors.background)
                 }
                 onMouseOut={(e) =>
                   (e.currentTarget.style.backgroundColor = "transparent")
@@ -385,6 +404,27 @@ const EmployeeList = () => {
             ))}
           </tbody>
         </table>
+        {pagination && (pagination.totalPages > 1) && (
+          <div style={{ display: "flex", justifyContent: "center", gap: theme.spacing.sm, marginTop: theme.spacing.lg }}>
+            <Button
+              type="secondary"
+              onClick={() => setCurrentPage(pagination.prevPage)}
+              disabled={!pagination.hasPrevPage}
+            >
+              Previous
+            </Button>
+            <span style={{ alignSelf: "center" }}>
+              Page {pagination.currentPage} of {pagination.totalPages}
+            </span>
+            <Button
+              type="secondary"
+              onClick={() => setCurrentPage(pagination.nextPage)}
+              disabled={!pagination.hasNextPage}
+            >
+              Next
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

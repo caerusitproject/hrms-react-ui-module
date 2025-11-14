@@ -34,8 +34,8 @@ const predefinedVariables = [
   { key: "designation", label: "{{designation}}" },
   { key: "company", label: "{{company}}" },
   { key: "date", label: "{{date}}" },
- // { key: "idNumber", label: "{{idNumber}}" },
- { key: "idNumber", label: "{{idNumber}}" },
+  // { key: "idNumber", label: "{{idNumber}}" },
+  { key: "idNumber", label: "{{idNumber}}" },
 ];
 
 export default function EmailTemplateManager() {
@@ -45,7 +45,12 @@ export default function EmailTemplateManager() {
   const [sendMailOpen, setSendMailOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteTemplateId, setDeleteTemplateId] = useState(null);
-  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [selectedTemplate, setSelectedTemplate] = useState({
+    id: null,
+    type: "",
+    subject: "",
+    body: "",
+  });
   const [formData, setFormData] = useState({
     id: null,
     type: "",
@@ -75,13 +80,15 @@ export default function EmailTemplateManager() {
   }, []);
 
   const fetchTemplates = async () => {
-    try {
-      const data = await EmailTemplateAPI.getAllTemplates();
-      setTemplates(data.templates.rows);
-    } catch (error) {
-      console.error("Error fetching templates:", error);
-    }
-  };
+  try {
+    const data = await EmailTemplateAPI.getAllTemplates();
+    const rows = data?.templates?.rows;
+    setTemplates(Array.isArray(rows) ? rows : []);
+  } catch (error) {
+    console.error("Error fetching templates:", error);
+    setTemplates([]); // <-- prevent undefined
+  }
+};
 
   useEffect(() => {
     fetchTemplates();
@@ -89,9 +96,11 @@ export default function EmailTemplateManager() {
 
   // Update preview when mailForm.variables change
   useEffect(() => {
-    if (selectedTemplate && mailForm.variables) {
-      let updatedBody = selectedTemplate.body.replace(/\n/g, "<br />");
-      let updatedSubject = selectedTemplate.subject;
+    console.log("Updating preview with variables:", mailForm.variables);
+    console.log("Selected Template:", selectedTemplate);
+    if (selectedTemplate?.body && selectedTemplate?.subject) {
+      let updatedBody = (selectedTemplate?.body || "").replace(/\n/g, "<br />");
+      let updatedSubject = selectedTemplate?.subject || "";
       Object.keys(mailForm.variables).forEach((key) => {
         const placeholder = `{{${key}}}`;
         const replacement = mailForm.variables[key] || placeholder;
@@ -254,7 +263,7 @@ export default function EmailTemplateManager() {
       // const response = await EmailTemplateAPI.sendEmail(payload);
       // alert("Email sent successfully!");
 
-     // alert("Email payload ready! Check console for details.");
+      // alert("Email payload ready! Check console for details.");
       setSendMailOpen(false);
     } catch (error) {
       console.error("Error sending email:", error);
@@ -411,7 +420,7 @@ export default function EmailTemplateManager() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {templates.map((template) => (
+            {(templates || []).map((template) => (
               <TableRow
                 key={template.id}
                 sx={{

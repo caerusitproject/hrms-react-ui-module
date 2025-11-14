@@ -1,8 +1,8 @@
 // src/components/AppRoutes.jsx
 import React, { Suspense, lazy } from "react";
-import { Routes, Route, Navigate,useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Outlet } from "react-router-dom";
-import { useState,useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useTokenRefresh } from "../hooks/useTokenRefresh";
 import { useAuth } from "../hooks/useAuth";
 import CustomLoader from "../components/common/CustomLoader";
@@ -11,6 +11,8 @@ import EmployeeProfileEdit from "../pages/profile/EmployeeProfileEdit";
 import EmployeeProfileView from "../pages/profile/EmployeeProfileView";
 import EmployeeList from "../pages/profile/EmployeeList";
 import Teamemployee from "../pages/profile/Teamemployee";
+import ForgotPassword from '../pages/auth/ForgotPassword';
+import ResetPassword from '../pages/auth/ResetPassword';
 // Lazy load components
 const Login = lazy(() => import("../pages/auth/Login"));
 const MainLayout = lazy(() => import("./layout/MainLayout"));
@@ -40,22 +42,24 @@ const ScrollToTop = () => {
 };
 const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
-  useTokenRefresh();
+  
   return (
     <div className="app">
       <Suspense fallback={<CustomLoader />}>
-      <ScrollToTop />
+        <ScrollToTop />
         <Routes>
           {/* Root redirect to login */}
           <Route path="/" element={<Navigate to="/login" replace />} />
-
           {/* Public Login route */}
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route
             path="/login"
             element={
               isAuthenticated ? <Navigate to="/home" replace /> : <Login />
             }
           />
+
 
           {/* Protected routes with nested layout */}
           <Route
